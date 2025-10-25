@@ -56,6 +56,7 @@ pub const Scanner = struct {
     }
 
     /// Scan all files and extract class names
+    /// OPTIMIZED: Uses arena allocator for temporary allocations
     pub fn scan(self: *Scanner) ![][]const u8 {
         const start_time = std.time.milliTimestamp();
         defer {
@@ -63,9 +64,14 @@ pub const Scanner = struct {
             self.stats.duration_ms = end_time - start_time;
         }
 
+        // OPTIMIZATION: Use arena for temporary allocations during scan
+        var arena = std.heap.ArenaAllocator.init(self.allocator);
+        defer arena.deinit();
+        const temp_allocator = arena.allocator();
+
         // Initialize file scanner
         var file_scanner = FileScanner.init(
-            self.allocator,
+            temp_allocator,
             self.config.base_path,
             self.config.include_patterns,
             self.config.exclude_patterns,
@@ -73,44 +79,26 @@ pub const Scanner = struct {
 
         // Scan for files
         const files = try file_scanner.scan();
-        defer {
-            for (files) |file| self.allocator.free(file);
-            self.allocator.free(files);
-        }
-
         self.stats.files_scanned = files.len;
 
-        // Extract classes from each file
+        // OPTIMIZATION: Pre-allocate approximate capacity
         var all_classes: std.ArrayList([]const u8) = .{};
-        errdefer {
-            for (all_classes.items) |class| self.allocator.free(class);
-            all_classes.deinit(self.allocator);
-        }
+        try all_classes.ensureTotalCapacity(temp_allocator, files.len * 10); // Estimate ~10 classes per file
 
-        var extractor = ContentExtractor.init(self.allocator);
+        var extractor = ContentExtractor.init(temp_allocator);
 
         for (files) |file_path| {
             const classes = try self.extractWithCache(file_path, &extractor);
-            defer {
-                for (classes) |class| self.allocator.free(class);
-                self.allocator.free(classes);
-            }
 
             // Add to all_classes (deduplicating will happen later)
-            for (classes) |class| {
-                const owned = try self.allocator.dupe(u8, class);
-                try all_classes.append(self.allocator, owned);
-            }
+            // No need to dupe - arena will clean up
+            try all_classes.appendSlice(temp_allocator, classes);
         }
 
         self.stats.classes_extracted = all_classes.items.len;
 
-        // Deduplicate classes
+        // Deduplicate classes and transfer to main allocator
         const unique_classes = try self.deduplicateClasses(all_classes.items);
-
-        // Free original list
-        for (all_classes.items) |class| self.allocator.free(class);
-        all_classes.deinit(self.allocator);
 
         return unique_classes;
     }
