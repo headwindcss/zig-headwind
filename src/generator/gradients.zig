@@ -44,17 +44,18 @@ pub fn generateGradientFrom(
     if (value == null) return;
 
     const colors_module = @import("colors.zig");
-    const color_info = colors_module.parseColorShade(value.?) orelse return;
-    const color_value = colors_module.getColorValue(color_info.color, color_info.shade) orelse return;
+    const oklch_value = colors_module.resolveColor(value.?) orelse return;
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
 
+    const from_color = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+
     // Set CSS variable for gradient start
-    try rule.addDeclaration(
+    try rule.addDeclarationOwned(
         generator.allocator,
         "--hw-gradient-from",
-        color_value,
+        from_color,
     );
     try rule.addDeclaration(
         generator.allocator,
@@ -79,8 +80,7 @@ pub fn generateGradientVia(
     if (value == null) return;
 
     const colors_module = @import("colors.zig");
-    const color_info = colors_module.parseColorShade(value.?) orelse return;
-    const color_value = colors_module.getColorValue(color_info.color, color_info.shade) orelse return;
+    const oklch_value = colors_module.resolveColor(value.?) orelse return;
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
@@ -90,8 +90,8 @@ pub fn generateGradientVia(
         "--hw-gradient-stops",
         try std.fmt.allocPrint(
             generator.allocator,
-            "var(--hw-gradient-from), {s}, var(--hw-gradient-to)",
-            .{color_value},
+            "var(--hw-gradient-from), oklch({s}), var(--hw-gradient-to)",
+            .{oklch_value},
         ),
     );
 
@@ -107,16 +107,17 @@ pub fn generateGradientTo(
     if (value == null) return;
 
     const colors_module = @import("colors.zig");
-    const color_info = colors_module.parseColorShade(value.?) orelse return;
-    const color_value = colors_module.getColorValue(color_info.color, color_info.shade) orelse return;
+    const oklch_value = colors_module.resolveColor(value.?) orelse return;
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
 
-    try rule.addDeclaration(
+    const to_color = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+
+    try rule.addDeclarationOwned(
         generator.allocator,
         "--hw-gradient-to",
-        color_value,
+        to_color,
     );
 
     try generator.rules.append(generator.allocator, rule);

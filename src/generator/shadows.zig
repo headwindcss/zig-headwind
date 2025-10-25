@@ -41,14 +41,15 @@ pub fn generateShadowColor(
 ) !void {
     if (value == null) return;
 
-    const color_info = colors.parseColorShade(value.?) orelse return;
-    const color_value = colors.getColorValue(color_info.color, color_info.shade) orelse return;
+    const oklch_value = colors.resolveColor(value.?) orelse return;
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
 
+    const color_str = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+
     // Set --hw-shadow-color custom property
-    try rule.addDeclaration(generator.allocator, "--hw-shadow-color", color_value);
+    try rule.addDeclarationOwned(generator.allocator, "--hw-shadow-color", color_str);
     try rule.addDeclaration(generator.allocator, "--hw-shadow", "var(--hw-shadow-colored)");
 
     try generator.rules.append(generator.allocator, rule);

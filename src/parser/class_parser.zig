@@ -56,10 +56,13 @@ pub fn parseClass(allocator: std.mem.Allocator, class_str: []const u8) !ParsedCl
     var is_important = false;
     var current = trimmed;
 
-    // Check for important modifier (!)
+    // Check for important modifier (! at start or end)
     if (current[0] == '!') {
         is_important = true;
         current = current[1..];
+    } else if (current[current.len - 1] == '!') {
+        is_important = true;
+        current = current[0 .. current.len - 1];
     }
 
     // Split by variant separator (:)
@@ -92,6 +95,11 @@ pub fn parseClass(allocator: std.mem.Allocator, class_str: []const u8) !ParsedCl
     // Extract utility (everything after last colon, or entire string if no colons)
     const utility_start = if (last_colon) |pos| pos + 1 else 0;
     const utility_str = current[utility_start..];
+
+    // Validate that utility is non-empty
+    if (utility_str.len == 0) {
+        return error.InvalidClassName;
+    }
 
     // Check for arbitrary values [...]
     var is_arbitrary = false;
@@ -144,9 +152,21 @@ pub fn parseClass(allocator: std.mem.Allocator, class_str: []const u8) !ParsedCl
                 };
 
                 if (std.mem.indexOf(u8, variant_str, "/")) |slash_pos| {
-                    // Has a name: "group/sidebar" -> variant="group", name="sidebar"
-                    variant_info.variant = try allocator.dupe(u8, variant_str[0..slash_pos]);
-                    variant_info.name = try allocator.dupe(u8, variant_str[slash_pos + 1..]);
+                    // Has a name: "group/sidebar-hover" -> variant="group-hover", name="sidebar"
+                    const base = variant_str[0..slash_pos]; // e.g., "group"
+                    const rest = variant_str[slash_pos + 1..]; // e.g., "sidebar-hover"
+
+                    // Split rest by dash to separate name from variant modifier
+                    if (std.mem.indexOf(u8, rest, "-")) |dash_pos| {
+                        // "sidebar-hover" -> name="sidebar", variant="group-hover"
+                        variant_info.name = try allocator.dupe(u8, rest[0..dash_pos]);
+                        const combined_variant = try std.fmt.allocPrint(allocator, "{s}-{s}", .{base, rest[dash_pos + 1..]});
+                        variant_info.variant = combined_variant;
+                    } else {
+                        // No dash in rest, just use base as variant and rest as name
+                        variant_info.variant = try allocator.dupe(u8, base);
+                        variant_info.name = try allocator.dupe(u8, rest);
+                    }
                 } else {
                     // No name: just the variant
                     variant_info.variant = try allocator.dupe(u8, variant_str);
@@ -331,11 +351,11 @@ test "parseClass: named group" {
     defer parsed.deinit(allocator);
 
     try std.testing.expectEqual(@as(usize, 1), parsed.variants.len);
-    // The parser splits "group/sidebar-hover" into variant="group" and name="sidebar-hover"
-    try std.testing.expectEqualStrings("group", parsed.variants[0].variant);
+    // The parser splits "group/sidebar-hover" into variant="group-hover" and name="sidebar"
+    try std.testing.expectEqualStrings("group-hover", parsed.variants[0].variant);
     try std.testing.expect(parsed.variants[0].name != null);
     if (parsed.variants[0].name) |name| {
-        try std.testing.expectEqualStrings("sidebar-hover", name);
+        try std.testing.expectEqualStrings("sidebar", name);
     }
 }
 

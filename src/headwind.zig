@@ -26,6 +26,7 @@ pub const FileCache = @import("cache/file_cache.zig").FileCache;
 // Generator
 pub const CSSGenerator = @import("generator/css_generator.zig").CSSGenerator;
 pub const CSSRule = @import("generator/css_generator.zig").CSSRule;
+pub const colors = @import("generator/colors.zig");
 
 // Plugin system
 pub const Plugin = @import("plugin/plugin.zig").Plugin;

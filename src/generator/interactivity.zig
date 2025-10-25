@@ -185,12 +185,14 @@ pub fn generateCaretColor(
 ) !void {
     if (value == null) return;
 
-    const color_info = colors.parseColorShade(value.?) orelse return;
-    const color_value = colors.getColorValue(color_info.color, color_info.shade) orelse return;
+    const oklch_value = colors.resolveColor(value.?) orelse return;
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "caret-color", color_value);
+
+    const color_str = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+    try rule.addDeclarationOwned(generator.allocator, "caret-color", color_str);
+
     try generator.rules.append(generator.allocator, rule);
 }
 
@@ -202,12 +204,14 @@ pub fn generateAccentColor(
 ) !void {
     if (value == null) return;
 
-    const color_info = colors.parseColorShade(value.?) orelse return;
-    const color_value = colors.getColorValue(color_info.color, color_info.shade) orelse return;
+    const oklch_value = colors.resolveColor(value.?) orelse return;
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "accent-color", color_value);
+
+    const color_str = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+    try rule.addDeclarationOwned(generator.allocator, "accent-color", color_str);
+
     try generator.rules.append(generator.allocator, rule);
 }
 

@@ -1,153 +1,323 @@
 const std = @import("std");
 const CSSGenerator = @import("css_generator.zig").CSSGenerator;
+const CSSRule = @import("css_generator.zig").CSSRule;
 const class_parser = @import("../parser/class_parser.zig");
+const colors = @import("colors.zig");
 
-/// Background attachment utilities
-pub fn generateBackgroundAttachment(
-    generator: *CSSGenerator,
-    parsed: *const class_parser.ParsedClass,
-    value: ?[]const u8,
-) !void {
-    const attachment_map = std.StaticStringMap([]const u8).initComptime(.{
-        .{ "fixed", "fixed" },
-        .{ "local", "local" },
-        .{ "scroll", "scroll" },
-    });
+/// Complete Background Utilities for Tailwind CSS
+/// This module implements ALL background-related utilities from Tailwind CSS v3.4
 
-    const attachment_value = attachment_map.get(value orelse "scroll") orelse return;
+// ============================================================================
+// Background Attachment
+// ============================================================================
 
+pub fn generateBgAttachment(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "background-attachment", attachment_value);
+
+    const attachment = if (std.mem.eql(u8, value, "fixed"))
+        "fixed"
+    else if (std.mem.eql(u8, value, "local"))
+        "local"
+    else if (std.mem.eql(u8, value, "scroll"))
+        "scroll"
+    else {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    try rule.addDeclaration(generator.allocator, "background-attachment", attachment);
     try generator.rules.append(generator.allocator, rule);
 }
 
-/// Background clip utilities
-pub fn generateBackgroundClip(
-    generator: *CSSGenerator,
-    parsed: *const class_parser.ParsedClass,
-    value: ?[]const u8,
-) !void {
-    const clip_map = std.StaticStringMap([]const u8).initComptime(.{
-        .{ "border", "border-box" },
-        .{ "padding", "padding-box" },
-        .{ "content", "content-box" },
-        .{ "text", "text" },
-    });
+// ============================================================================
+// Background Clip
+// ============================================================================
 
-    const clip_value = clip_map.get(value orelse "border") orelse return;
-
+pub fn generateBgClip(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "background-clip", clip_value);
-    // Add -webkit-background-clip for text clipping (needed for Safari)
-    if (std.mem.eql(u8, clip_value, "text")) {
-        try rule.addDeclaration(generator.allocator, "-webkit-background-clip", "text");
-        try rule.addDeclaration(generator.allocator, "-webkit-text-fill-color", "transparent");
-    }
+
+    const clip = if (std.mem.eql(u8, value, "border"))
+        "border-box"
+    else if (std.mem.eql(u8, value, "padding"))
+        "padding-box"
+    else if (std.mem.eql(u8, value, "content"))
+        "content-box"
+    else if (std.mem.eql(u8, value, "text"))
+        "text"
+    else {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    try rule.addDeclaration(generator.allocator, "background-clip", clip);
     try generator.rules.append(generator.allocator, rule);
 }
 
-/// Background origin utilities
-pub fn generateBackgroundOrigin(
-    generator: *CSSGenerator,
-    parsed: *const class_parser.ParsedClass,
-    value: ?[]const u8,
-) !void {
-    const origin_map = std.StaticStringMap([]const u8).initComptime(.{
-        .{ "border", "border-box" },
-        .{ "padding", "padding-box" },
-        .{ "content", "content-box" },
-    });
+// ============================================================================
+// Background Color
+// ============================================================================
 
-    const origin_value = origin_map.get(value orelse "padding") orelse return;
-
+pub fn generateBgColor(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "background-origin", origin_value);
+
+    const oklch_value = colors.resolveColor(value) orelse {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    const color_str = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+    try rule.addDeclarationOwned(generator.allocator, "background-color", color_str);
+
     try generator.rules.append(generator.allocator, rule);
 }
 
-/// Background position utilities
-pub fn generateBackgroundPosition(
-    generator: *CSSGenerator,
-    parsed: *const class_parser.ParsedClass,
-    value: ?[]const u8,
-) !void {
-    const position_map = std.StaticStringMap([]const u8).initComptime(.{
-        .{ "bottom", "bottom" },
-        .{ "center", "center" },
-        .{ "left", "left" },
-        .{ "left-bottom", "left bottom" },
-        .{ "left-top", "left top" },
-        .{ "right", "right" },
-        .{ "right-bottom", "right bottom" },
-        .{ "right-top", "right top" },
-        .{ "top", "top" },
-    });
+// ============================================================================
+// Background Origin
+// ============================================================================
 
-    const position_value = position_map.get(value orelse "center") orelse return;
-
+pub fn generateBgOrigin(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "background-position", position_value);
+
+    const origin = if (std.mem.eql(u8, value, "border"))
+        "border-box"
+    else if (std.mem.eql(u8, value, "padding"))
+        "padding-box"
+    else if (std.mem.eql(u8, value, "content"))
+        "content-box"
+    else {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    try rule.addDeclaration(generator.allocator, "background-origin", origin);
     try generator.rules.append(generator.allocator, rule);
 }
 
-/// Background repeat utilities
-pub fn generateBackgroundRepeat(
-    generator: *CSSGenerator,
-    parsed: *const class_parser.ParsedClass,
-    value: ?[]const u8,
-) !void {
-    const repeat_map = std.StaticStringMap([]const u8).initComptime(.{
-        .{ "repeat", "repeat" },
-        .{ "no-repeat", "no-repeat" },
-        .{ "repeat-x", "repeat-x" },
-        .{ "repeat-y", "repeat-y" },
-        .{ "round", "round" },
-        .{ "space", "space" },
-    });
+// ============================================================================
+// Background Position
+// ============================================================================
 
-    const repeat_value = repeat_map.get(value orelse "repeat") orelse return;
-
+pub fn generateBgPosition(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, position: []const u8) !void {
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "background-repeat", repeat_value);
+
+    const value = if (std.mem.eql(u8, position, "bottom"))
+        "bottom"
+    else if (std.mem.eql(u8, position, "center"))
+        "center"
+    else if (std.mem.eql(u8, position, "left"))
+        "left"
+    else if (std.mem.eql(u8, position, "left-bottom"))
+        "left bottom"
+    else if (std.mem.eql(u8, position, "left-top"))
+        "left top"
+    else if (std.mem.eql(u8, position, "right"))
+        "right"
+    else if (std.mem.eql(u8, position, "right-bottom"))
+        "right bottom"
+    else if (std.mem.eql(u8, position, "right-top"))
+        "right top"
+    else if (std.mem.eql(u8, position, "top"))
+        "top"
+    else {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    try rule.addDeclaration(generator.allocator, "background-position", value);
     try generator.rules.append(generator.allocator, rule);
 }
 
-/// Background size utilities
-pub fn generateBackgroundSize(
-    generator: *CSSGenerator,
-    parsed: *const class_parser.ParsedClass,
-    value: ?[]const u8,
-) !void {
-    const size_map = std.StaticStringMap([]const u8).initComptime(.{
-        .{ "auto", "auto" },
-        .{ "cover", "cover" },
-        .{ "contain", "contain" },
-    });
+// ============================================================================
+// Background Repeat
+// ============================================================================
 
-    const size_value = size_map.get(value orelse "auto") orelse return;
-
+pub fn generateBgRepeat(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, repeat: []const u8) !void {
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "background-size", size_value);
+
+    const value = if (std.mem.eql(u8, repeat, "repeat"))
+        "repeat"
+    else if (std.mem.eql(u8, repeat, "no-repeat"))
+        "no-repeat"
+    else if (std.mem.eql(u8, repeat, "repeat-x"))
+        "repeat-x"
+    else if (std.mem.eql(u8, repeat, "repeat-y"))
+        "repeat-y"
+    else if (std.mem.eql(u8, repeat, "repeat-round"))
+        "round"
+    else if (std.mem.eql(u8, repeat, "repeat-space"))
+        "space"
+    else {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    try rule.addDeclaration(generator.allocator, "background-repeat", value);
     try generator.rules.append(generator.allocator, rule);
 }
 
-/// Background image utilities (for gradients, handled elsewhere)
-/// This is a placeholder for custom background-image values
-pub fn generateBackgroundImage(
-    generator: *CSSGenerator,
-    parsed: *const class_parser.ParsedClass,
-    value: ?[]const u8,
-) !void {
-    if (value == null) return;
+// ============================================================================
+// Background Size
+// ============================================================================
 
+pub fn generateBgSize(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, size: []const u8) !void {
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    try rule.addDeclaration(generator.allocator, "background-image", value.?);
+
+    const value = if (std.mem.eql(u8, size, "auto"))
+        "auto"
+    else if (std.mem.eql(u8, size, "cover"))
+        "cover"
+    else if (std.mem.eql(u8, size, "contain"))
+        "contain"
+    else {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    try rule.addDeclaration(generator.allocator, "background-size", value);
+    try generator.rules.append(generator.allocator, rule);
+}
+
+// ============================================================================
+// Background Image
+// ============================================================================
+
+pub fn generateBgNone(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    try rule.addDeclaration(generator.allocator, "background-image", "none");
+    try generator.rules.append(generator.allocator, rule);
+}
+
+pub fn generateBgGradient(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, direction: []const u8) !void {
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    const gradient = if (std.mem.eql(u8, direction, "to-t"))
+        "linear-gradient(to top, var(--tw-gradient-stops))"
+    else if (std.mem.eql(u8, direction, "to-tr"))
+        "linear-gradient(to top right, var(--tw-gradient-stops))"
+    else if (std.mem.eql(u8, direction, "to-r"))
+        "linear-gradient(to right, var(--tw-gradient-stops))"
+    else if (std.mem.eql(u8, direction, "to-br"))
+        "linear-gradient(to bottom right, var(--tw-gradient-stops))"
+    else if (std.mem.eql(u8, direction, "to-b"))
+        "linear-gradient(to bottom, var(--tw-gradient-stops))"
+    else if (std.mem.eql(u8, direction, "to-bl"))
+        "linear-gradient(to bottom left, var(--tw-gradient-stops))"
+    else if (std.mem.eql(u8, direction, "to-l"))
+        "linear-gradient(to left, var(--tw-gradient-stops))"
+    else if (std.mem.eql(u8, direction, "to-tl"))
+        "linear-gradient(to top left, var(--tw-gradient-stops))"
+    else {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    try rule.addDeclaration(generator.allocator, "background-image", gradient);
+    try generator.rules.append(generator.allocator, rule);
+}
+
+// ============================================================================
+// Gradient Color Stops
+// ============================================================================
+
+pub fn generateGradientFrom(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    const oklch_value = colors.resolveColor(value) orelse {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    const from_color = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+    try rule.addDeclarationOwned(generator.allocator, "--tw-gradient-from", from_color);
+
+    const stops = try std.fmt.allocPrint(
+        generator.allocator,
+        "var(--tw-gradient-from), var(--tw-gradient-to, oklch({s} / 0))",
+        .{oklch_value},
+    );
+    try rule.addDeclarationOwned(generator.allocator, "--tw-gradient-stops", stops);
+
+    try generator.rules.append(generator.allocator, rule);
+}
+
+pub fn generateGradientVia(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    const oklch_value = colors.resolveColor(value) orelse {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    const via_color = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+    try rule.addDeclarationOwned(generator.allocator, "--tw-gradient-via", via_color);
+
+    const stops = try std.fmt.allocPrint(
+        generator.allocator,
+        "var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to, oklch({s} / 0))",
+        .{oklch_value},
+    );
+    try rule.addDeclarationOwned(generator.allocator, "--tw-gradient-stops", stops);
+
+    try generator.rules.append(generator.allocator, rule);
+}
+
+pub fn generateGradientTo(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    const oklch_value = colors.resolveColor(value) orelse {
+        rule.deinit(generator.allocator);
+        return;
+    };
+
+    const to_color = try std.fmt.allocPrint(generator.allocator, "oklch({s})", .{oklch_value});
+    try rule.addDeclarationOwned(generator.allocator, "--tw-gradient-to", to_color);
+
+    try generator.rules.append(generator.allocator, rule);
+}
+
+// ============================================================================
+// Gradient Color Stop Positions (simplified)
+// ============================================================================
+
+pub fn generateGradientFromPosition(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, position: []const u8) !void {
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    const pos = try std.fmt.allocPrint(generator.allocator, "{s}%", .{position});
+    try rule.addDeclarationOwned(generator.allocator, "--tw-gradient-from-position", pos);
+
+    try generator.rules.append(generator.allocator, rule);
+}
+
+pub fn generateGradientViaPosition(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, position: []const u8) !void {
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    const pos = try std.fmt.allocPrint(generator.allocator, "{s}%", .{position});
+    try rule.addDeclarationOwned(generator.allocator, "--tw-gradient-via-position", pos);
+
+    try generator.rules.append(generator.allocator, rule);
+}
+
+pub fn generateGradientToPosition(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, position: []const u8) !void {
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    const pos = try std.fmt.allocPrint(generator.allocator, "{s}%", .{position});
+    try rule.addDeclarationOwned(generator.allocator, "--tw-gradient-to-position", pos);
+
     try generator.rules.append(generator.allocator, rule);
 }

@@ -387,7 +387,7 @@ pub const CSSGenerator = struct {
             if (utility_parts.value) |val| {
                 if (std.mem.eql(u8, val, "wrap") or std.mem.eql(u8, val, "nowrap") or
                     std.mem.eql(u8, val, "balance") or std.mem.eql(u8, val, "pretty")) {
-                    try self.generateTextWrap(parsed);
+                    try self.generateTextWrap(parsed, utility_parts.value);
                     return; // Early return to avoid further checks
                 }
             }
@@ -455,7 +455,7 @@ pub const CSSGenerator = struct {
             if (utility_parts.value) |val| {
                 if (std.mem.eql(u8, val, "normal") or std.mem.eql(u8, val, "words") or
                     std.mem.eql(u8, val, "all") or std.mem.eql(u8, val, "keep")) {
-                    try self.generateWordBreak(parsed);
+                    try self.generateWordBreak(parsed, utility_parts.value);
                 }
             }
         } else if (std.mem.eql(u8, utility_name, "mix") and utility_parts.value != null and std.mem.startsWith(u8, utility_parts.value.?, "blend-")) {
@@ -1031,6 +1031,7 @@ pub const CSSGenerator = struct {
     const colors = @import("colors.zig");
     const sizing = @import("sizing.zig");
     const borders = @import("borders.zig");
+    const backgrounds = @import("backgrounds.zig");
     const gradients = @import("gradients.zig");
     const modern_colors = @import("modern_colors.zig");
     const transforms = @import("transforms.zig");
@@ -1059,114 +1060,200 @@ pub const CSSGenerator = struct {
     }
 
     fn generateWidth(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return sizing.generateWidth(self, parsed, value);
+        const val = value orelse return;
+        return sizing.generateWidth(self, parsed, val);
     }
 
     fn generateHeight(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return sizing.generateHeight(self, parsed, value);
+        const val = value orelse return;
+        return sizing.generateHeight(self, parsed, val);
     }
 
     fn generateText(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateText(self, parsed, value);
+        const val = value orelse return;
+
+        // Route to appropriate typography function based on value
+        // text-sm, text-lg, etc. -> font size
+        if (std.mem.eql(u8, val, "xs") or std.mem.eql(u8, val, "sm") or
+            std.mem.eql(u8, val, "base") or std.mem.eql(u8, val, "lg") or
+            std.mem.eql(u8, val, "xl") or std.mem.eql(u8, val, "2xl") or
+            std.mem.eql(u8, val, "3xl") or std.mem.eql(u8, val, "4xl") or
+            std.mem.eql(u8, val, "5xl") or std.mem.eql(u8, val, "6xl") or
+            std.mem.eql(u8, val, "7xl") or std.mem.eql(u8, val, "8xl") or
+            std.mem.eql(u8, val, "9xl")) {
+            return typography.generateFontSize(self, parsed, val);
+        }
+        // text-left, text-center, text-right, etc. -> text align
+        else if (std.mem.eql(u8, val, "left") or std.mem.eql(u8, val, "center") or
+                 std.mem.eql(u8, val, "right") or std.mem.eql(u8, val, "justify") or
+                 std.mem.eql(u8, val, "start") or std.mem.eql(u8, val, "end")) {
+            return typography.generateTextAlign(self, parsed, val);
+        }
     }
 
     fn generateFont(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateFont(self, parsed, value);
+        const val = value orelse return;
+
+        // Route to appropriate typography function based on value
+        // font-sans, font-serif, font-mono -> font family
+        if (std.mem.eql(u8, val, "sans") or std.mem.eql(u8, val, "serif") or
+            std.mem.eql(u8, val, "mono")) {
+            return typography.generateFontFamily(self, parsed, val);
+        }
+        // font-thin, font-normal, font-bold, etc. -> font weight
+        else if (std.mem.eql(u8, val, "thin") or std.mem.eql(u8, val, "extralight") or
+                 std.mem.eql(u8, val, "light") or std.mem.eql(u8, val, "normal") or
+                 std.mem.eql(u8, val, "medium") or std.mem.eql(u8, val, "semibold") or
+                 std.mem.eql(u8, val, "bold") or std.mem.eql(u8, val, "extrabold") or
+                 std.mem.eql(u8, val, "black") or
+                 // Numeric weights
+                 std.mem.eql(u8, val, "100") or std.mem.eql(u8, val, "200") or
+                 std.mem.eql(u8, val, "300") or std.mem.eql(u8, val, "400") or
+                 std.mem.eql(u8, val, "500") or std.mem.eql(u8, val, "600") or
+                 std.mem.eql(u8, val, "700") or std.mem.eql(u8, val, "800") or
+                 std.mem.eql(u8, val, "900")) {
+            return typography.generateFontWeight(self, parsed, val);
+        }
     }
 
     fn generateTextShadow(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateTextShadow(self, parsed, value);
+        // TODO: Implement text-shadow support
+        // Text shadow is not yet implemented in the unified typography module
+        _ = self;
+        _ = parsed;
+        _ = value;
     }
 
     fn generateFontStyle(self: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
-        return typography.generateFontStyle(self, parsed);
+        const utility_name = parsed.utility;
+        if (std.mem.eql(u8, utility_name, "italic")) {
+            return typography.generateItalic(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "not-italic")) {
+            return typography.generateNotItalic(self, parsed);
+        }
     }
 
     fn generateTextDecoration(self: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
-        return typography.generateTextDecoration(self, parsed);
+        const utility_name = parsed.utility;
+        if (std.mem.eql(u8, utility_name, "underline")) {
+            return typography.generateUnderline(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "overline")) {
+            return typography.generateOverline(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "line-through")) {
+            return typography.generateLineThrough(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "no-underline")) {
+            return typography.generateNoUnderline(self, parsed);
+        }
     }
 
     fn generateTextTransform(self: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
-        return typography.generateTextTransform(self, parsed);
+        const utility_name = parsed.utility;
+        if (std.mem.eql(u8, utility_name, "uppercase")) {
+            return typography.generateUppercase(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "lowercase")) {
+            return typography.generateLowercase(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "capitalize")) {
+            return typography.generateCapitalize(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "normal-case")) {
+            return typography.generateNormalCase(self, parsed);
+        }
     }
 
     fn generateTextOverflow(self: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
-        return typography.generateTextOverflow(self, parsed);
+        const utility_name = parsed.utility;
+        if (std.mem.eql(u8, utility_name, "truncate")) {
+            return typography.generateTruncate(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "text-ellipsis")) {
+            return typography.generateTextEllipsis(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "text-clip")) {
+            return typography.generateTextClip(self, parsed);
+        }
     }
 
     fn generateLineHeight(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateLineHeight(self, parsed, value);
+        const val = value orelse return;
+        return typography.generateLeading(self, parsed, val);
     }
 
     fn generateLetterSpacing(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateLetterSpacing(self, parsed, value);
+        const val = value orelse return;
+        return typography.generateTracking(self, parsed, val);
     }
 
     fn generateWhitespace(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateWhitespace(self, parsed, value);
+        const val = value orelse return;
+        return typography.generateWhitespace(self, parsed, val);
     }
 
-    fn generateTextWrap(self: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
-        return typography.generateTextWrap(self, parsed);
+    fn generateTextWrap(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
+        const val = value orelse return;
+        return typography.generateTextWrap(self, parsed, val);
     }
 
     fn generateVerticalAlign(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateVerticalAlign(self, parsed, value);
+        const val = value orelse return;
+        return typography.generateAlign(self, parsed, val);
     }
 
-    fn generateWordBreak(self: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
-        return typography.generateWordBreak(self, parsed);
+    fn generateWordBreak(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
+        const val = value orelse return;
+        return typography.generateBreak(self, parsed, val);
     }
 
     fn generateTextIndent(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateTextIndent(self, parsed, value);
+        const val = value orelse return;
+        return typography.generateIndent(self, parsed, val);
     }
 
     fn generateHyphens(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return typography.generateHyphens(self, parsed, value);
+        const val = value orelse return;
+        return typography.generateHyphens(self, parsed, val);
     }
 
     fn generateBackground(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return colors.generateBackground(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateBgColor(self, parsed, val);
     }
 
     fn generateTextColor(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return colors.generateTextColor(self, parsed, value);
+        const val = value orelse return;
+        return typography.generateTextColor(self, parsed, val);
     }
 
     fn generateBorderColor(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return colors.generateBorderColor(self, parsed, value);
+        const val = value orelse return;
+        return borders.generateBorderColor(self, parsed, val);
     }
 
     // Background utilities
     fn generateBackgroundAttachment(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        const backgrounds = @import("backgrounds.zig");
-        return backgrounds.generateBackgroundAttachment(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateBgAttachment(self, parsed, val);
     }
 
     fn generateBackgroundClip(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        const backgrounds = @import("backgrounds.zig");
-        return backgrounds.generateBackgroundClip(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateBgClip(self, parsed, val);
     }
 
     fn generateBackgroundOrigin(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        const backgrounds = @import("backgrounds.zig");
-        return backgrounds.generateBackgroundOrigin(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateBgOrigin(self, parsed, val);
     }
 
     fn generateBackgroundPosition(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        const backgrounds = @import("backgrounds.zig");
-        return backgrounds.generateBackgroundPosition(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateBgPosition(self, parsed, val);
     }
 
     fn generateBackgroundRepeat(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        const backgrounds = @import("backgrounds.zig");
-        return backgrounds.generateBackgroundRepeat(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateBgRepeat(self, parsed, val);
     }
 
     fn generateBackgroundSize(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        const backgrounds = @import("backgrounds.zig");
-        return backgrounds.generateBackgroundSize(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateBgSize(self, parsed, val);
     }
 
     // Modern color functions
@@ -1187,27 +1274,31 @@ pub const CSSGenerator = struct {
     }
 
     fn generateBorder(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return borders.generateBorder(self, parsed, value);
+        return borders.generateBorderWidth(self, parsed, value);
     }
 
     fn generateBorderRadius(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return borders.generateBorderRadius(self, parsed, value);
+        return borders.generateRounded(self, parsed, value);
     }
 
     fn generateGradientFrom(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return gradients.generateGradientFrom(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateGradientFrom(self, parsed, val);
     }
 
     fn generateGradientVia(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return gradients.generateGradientVia(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateGradientVia(self, parsed, val);
     }
 
     fn generateGradientTo(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return gradients.generateGradientTo(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateGradientTo(self, parsed, val);
     }
 
     fn generateBackgroundGradient(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
-        return gradients.generateBackgroundGradient(self, parsed, value);
+        const val = value orelse return;
+        return backgrounds.generateBgGradient(self, parsed, val);
     }
 
     // Transform utilities

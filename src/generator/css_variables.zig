@@ -24,26 +24,31 @@ pub fn generateThemeVariables(allocator: std.mem.Allocator) ![]const u8 {
 }
 
 fn generateColorVariables(allocator: std.mem.Allocator, builder: *string_utils.StringBuilder) !void {
-    _ = allocator;
+    // Base colors (OKLCH format)
+    try builder.append("  --color-white: oklch(100% 0 0);\n");
+    try builder.append("  --color-black: oklch(0% 0 0);\n");
 
-    // Base colors
-    try builder.append("  --color-white: #ffffff;\n");
-    try builder.append("  --color-black: #000000;\n");
-
-    // Color palette
+    // Color palette with OKLCH values
     const color_names = [_][]const u8{ "slate", "gray", "red", "blue", "green", "yellow" };
+    const shades = [_][]const u8{ "50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950" };
 
     for (color_names) |color_name| {
-        const color_shades = colors.colors.get(color_name) orelse continue;
+        for (shades) |shade| {
+            const color_value = blk: {
+                const full_name = try std.fmt.allocPrint(allocator, "{s}-{s}", .{ color_name, shade });
+                defer allocator.free(full_name);
+                break :blk colors.resolveColor(full_name);
+            };
 
-        for (color_shades) |shade| {
-            try builder.append("  --color-");
-            try builder.append(color_name);
-            try builder.append("-");
-            try builder.append(shade.shade);
-            try builder.append(": ");
-            try builder.append(shade.value);
-            try builder.append(";\n");
+            if (color_value) |oklch| {
+                try builder.append("  --color-");
+                try builder.append(color_name);
+                try builder.append("-");
+                try builder.append(shade);
+                try builder.append(": oklch(");
+                try builder.append(oklch);
+                try builder.append(");\n");
+            }
         }
     }
 }
