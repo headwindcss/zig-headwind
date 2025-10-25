@@ -1,0 +1,23 @@
+{
+  "name": "zig-headwind-benchmarks",
+  "version": "1.0.0",
+  "description": "Performance benchmarks for zig-headwind vs competing tools",
+  "type": "module",
+  "scripts": {
+    "bench": "bun run benchmarks/suite.ts",
+    "bench:parser": "bun run benchmarks/parser.bench.ts",
+    "bench:generator": "bun run benchmarks/generator.bench.ts",
+    "bench:full": "bun run benchmarks/full-build.bench.ts",
+    "bench:compare": "bun run benchmarks/compare-tools.bench.ts",
+    "bench:all": "bun run bench:parser && bun run bench:generator && bun run bench:full && bun run bench:compare"
+  },
+  "dependencies": {
+    "mitata": "^1.0.34",
+    "tailwindcss": "^4.1.6",
+    "@unocss/core": "^66.5.4",
+    "lightningcss": "^1.30.2"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}

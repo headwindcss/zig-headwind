@@ -15,7 +15,7 @@ test "background color with OKLCH" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    const parsed = try class_parser.parseUtility(allocator, "bg-blue-500");
+    var parsed = try class_parser.parseClass(allocator, "bg-blue-500");
     defer parsed.deinit(allocator);
 
     try backgrounds.generateBgColor(&generator, &parsed, "blue-500");
@@ -32,7 +32,7 @@ test "background color with arbitrary value" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    const parsed = try class_parser.parseUtility(allocator, "bg-[#ff0000]");
+    var parsed = try class_parser.parseClass(allocator, "bg-[#ff0000]");
     defer parsed.deinit(allocator);
 
     try backgrounds.generateBgColor(&generator, &parsed, "#ff0000");
@@ -61,7 +61,7 @@ test "background special colors" {
         const class_name = try std.fmt.allocPrint(allocator, "bg-{s}", .{color});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try backgrounds.generateBgColor(&generator, &parsed, color);
@@ -94,7 +94,7 @@ test "background attachment values" {
         const class_name = try std.fmt.allocPrint(allocator, "bg-{s}", .{attachment});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try backgrounds.generateBgAttachment(&generator, &parsed, attachment);
@@ -128,7 +128,7 @@ test "background clip values" {
         const class_name = try std.fmt.allocPrint(allocator, "bg-clip-{s}", .{clip.input});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try backgrounds.generateBgClip(&generator, &parsed, clip.input);
@@ -161,7 +161,7 @@ test "background origin values" {
         const class_name = try std.fmt.allocPrint(allocator, "bg-origin-{s}", .{origin.input});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try backgrounds.generateBgOrigin(&generator, &parsed, origin.input);
@@ -200,7 +200,7 @@ test "background position values" {
         const class_name = try std.fmt.allocPrint(allocator, "bg-{s}", .{position.input});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try backgrounds.generateBgPosition(&generator, &parsed, position.input);
@@ -236,7 +236,7 @@ test "background repeat values" {
         const class_name = try std.fmt.allocPrint(allocator, "bg-{s}", .{repeat.input});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try backgrounds.generateBgRepeat(&generator, &parsed, repeat.input);
@@ -269,7 +269,7 @@ test "background size values" {
         const class_name = try std.fmt.allocPrint(allocator, "bg-{s}", .{size});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try backgrounds.generateBgSize(&generator, &parsed, size);
@@ -291,7 +291,7 @@ test "background none" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    const parsed = try class_parser.parseUtility(allocator, "bg-none");
+    var parsed = try class_parser.parseClass(allocator, "bg-none");
     defer parsed.deinit(allocator);
 
     try backgrounds.generateBgNone(&generator, &parsed);
@@ -327,7 +327,7 @@ test "gradient directions" {
         const class_name = try std.fmt.allocPrint(allocator, "bg-gradient-{s}", .{direction});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try backgrounds.generateBgGradient(&generator, &parsed, direction);
@@ -346,7 +346,7 @@ test "gradient from color" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    const parsed = try class_parser.parseUtility(allocator, "from-blue-500");
+    var parsed = try class_parser.parseClass(allocator, "from-blue-500");
     defer parsed.deinit(allocator);
 
     try backgrounds.generateGradientFrom(&generator, &parsed, "blue-500");
@@ -364,7 +364,7 @@ test "gradient via color" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    const parsed = try class_parser.parseUtility(allocator, "via-purple-500");
+    var parsed = try class_parser.parseClass(allocator, "via-purple-500");
     defer parsed.deinit(allocator);
 
     try backgrounds.generateGradientVia(&generator, &parsed, "purple-500");
@@ -382,7 +382,7 @@ test "gradient to color" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    const parsed = try class_parser.parseUtility(allocator, "to-red-500");
+    var parsed = try class_parser.parseClass(allocator, "to-red-500");
     defer parsed.deinit(allocator);
 
     try backgrounds.generateGradientTo(&generator, &parsed, "red-500");
@@ -410,7 +410,7 @@ test "gradient color stop positions" {
         const class_name = try std.fmt.allocPrint(allocator, "{s}-50", .{pos.fn_name});
         defer allocator.free(class_name);
 
-        const parsed = try class_parser.parseUtility(allocator, class_name);
+        var parsed = try class_parser.parseClass(allocator, class_name);
         defer parsed.deinit(allocator);
 
         try pos.generate_fn(&generator, &parsed, "50");

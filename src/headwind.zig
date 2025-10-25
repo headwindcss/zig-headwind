@@ -32,6 +32,15 @@ pub const borders = @import("generator/borders.zig");
 pub const sizing = @import("generator/sizing.zig");
 pub const spacing = @import("generator/spacing.zig");
 pub const typography = @import("generator/typography.zig");
+pub const layout = @import("generator/layout.zig");
+pub const flexbox = @import("generator/flexbox.zig");
+pub const grid = @import("generator/grid.zig");
+pub const shadows = @import("generator/shadows.zig");
+pub const blend = @import("generator/blend.zig");
+pub const transforms = @import("generator/transforms.zig");
+pub const filters = @import("generator/filters.zig");
+pub const transitions = @import("generator/transitions.zig");
+pub const animations = @import("generator/animations.zig");
 
 // Plugin system
 pub const Plugin = @import("plugin/plugin.zig").Plugin;
