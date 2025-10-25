@@ -134,67 +134,100 @@ pub const ErrorReporter = struct {
         self.printHint(utility_name);
     }
 
-    /// Find similar utilities using Levenshtein distance
+    /// Find similar utilities using Levenshtein distance and pattern matching
     fn findSimilarUtilities(self: *const ErrorReporter, utility_name: []const u8) ![][]const u8 {
         const common_utilities = [_][]const u8{
             // Layout
-            "flex",
-            "flex-row",
-            "flex-col",
-            "grid",
-            "block",
-            "inline",
-            "hidden",
+            "flex", "flex-row", "flex-col", "flex-wrap", "flex-nowrap",
+            "grid", "grid-cols-1", "grid-cols-2", "grid-cols-3", "grid-rows-1",
+            "block", "inline", "inline-block", "inline-flex", "inline-grid",
+            "hidden", "visible", "invisible",
+            "static", "fixed", "absolute", "relative", "sticky",
             // Spacing
-            "m-0",
-            "m-4",
-            "p-4",
-            "gap-4",
+            "m-0", "m-1", "m-2", "m-4", "m-8", "m-auto",
+            "mx-auto", "my-auto", "mt-4", "mb-4", "ml-4", "mr-4",
+            "p-0", "p-1", "p-2", "p-4", "p-8",
+            "px-4", "py-4", "pt-4", "pb-4", "pl-4", "pr-4",
+            "gap-0", "gap-2", "gap-4", "gap-8",
+            "space-x-4", "space-y-4",
             // Alignment
-            "items-center",
-            "justify-center",
-            "items-start",
-            "justify-start",
-            "items-end",
-            "justify-end",
+            "items-start", "items-center", "items-end", "items-baseline", "items-stretch",
+            "justify-start", "justify-center", "justify-end", "justify-between", "justify-around",
+            "content-start", "content-center", "content-end",
+            "self-auto", "self-start", "self-center", "self-end",
             // Sizing
-            "w-full",
-            "h-full",
-            "w-screen",
-            "h-screen",
+            "w-0", "w-full", "w-screen", "w-auto", "w-1/2", "w-1/3", "w-2/3",
+            "h-0", "h-full", "h-screen", "h-auto", "h-1/2",
+            "min-w-0", "min-w-full", "max-w-xs", "max-w-sm", "max-w-md", "max-w-lg",
+            "min-h-0", "min-h-full", "max-h-screen",
             // Typography
-            "text-sm",
-            "text-base",
-            "text-lg",
-            "text-xl",
-            "font-bold",
-            "text-center",
+            "text-xs", "text-sm", "text-base", "text-lg", "text-xl", "text-2xl",
+            "font-thin", "font-normal", "font-medium", "font-semibold", "font-bold",
+            "text-left", "text-center", "text-right", "text-justify",
+            "leading-none", "leading-tight", "leading-normal", "leading-loose",
+            "tracking-tighter", "tracking-tight", "tracking-normal", "tracking-wide",
+            "uppercase", "lowercase", "capitalize", "normal-case",
+            "underline", "line-through", "no-underline",
             // Colors
-            "bg-white",
-            "bg-black",
-            "text-white",
-            "text-black",
-            "bg-blue-500",
-            "text-blue-500",
+            "text-transparent", "text-current", "text-black", "text-white",
+            "text-gray-50", "text-gray-500", "text-gray-900",
+            "text-red-500", "text-blue-500", "text-green-500", "text-yellow-500",
+            "bg-transparent", "bg-current", "bg-black", "bg-white",
+            "bg-gray-50", "bg-gray-500", "bg-gray-900",
+            "bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500",
             // Borders
-            "border",
-            "rounded",
-            "rounded-lg",
+            "border", "border-0", "border-2", "border-4",
+            "border-t", "border-b", "border-l", "border-r",
+            "rounded", "rounded-sm", "rounded-md", "rounded-lg", "rounded-full",
+            "rounded-t", "rounded-b", "rounded-l", "rounded-r",
+            "border-solid", "border-dashed", "border-dotted",
+            "border-gray-200", "border-gray-500",
             // Effects
-            "shadow",
-            "shadow-lg",
-            "opacity-50",
+            "shadow", "shadow-sm", "shadow-md", "shadow-lg", "shadow-xl", "shadow-none",
+            "opacity-0", "opacity-50", "opacity-100",
+            "blur", "blur-sm", "blur-md", "blur-lg",
+            // Transitions
+            "transition", "transition-all", "transition-colors",
+            "duration-100", "duration-200", "duration-300", "duration-500",
+            "ease-in", "ease-out", "ease-in-out",
+            // Transforms
+            "transform", "scale-100", "scale-110", "rotate-45", "translate-x-4",
+            // Display
+            "overflow-hidden", "overflow-auto", "overflow-scroll",
+            "truncate", "whitespace-nowrap", "break-words",
+            // Z-index
+            "z-0", "z-10", "z-20", "z-50", "z-auto",
         };
 
         var suggestions = std.ArrayList([]const u8).init(self.allocator);
         errdefer suggestions.deinit();
 
+        // First pass: exact prefix matches
         for (common_utilities) |util| {
-            const distance = levenshteinDistance(utility_name, util);
-            // Suggest if distance is small (typo) or if starts with same prefix
-            if (distance <= 2 or std.mem.startsWith(u8, util, utility_name)) {
+            if (std.mem.startsWith(u8, util, utility_name) and utility_name.len > 2) {
                 try suggestions.append(util);
-                if (suggestions.items.len >= 3) break; // Max 3 suggestions
+                if (suggestions.items.len >= 5) break;
+            }
+        }
+
+        // Second pass: Levenshtein distance for typos
+        if (suggestions.items.len < 3) {
+            for (common_utilities) |util| {
+                const distance = levenshteinDistance(utility_name, util);
+                if (distance <= 2 and distance > 0) {
+                    // Check if not already added
+                    var already_added = false;
+                    for (suggestions.items) |s| {
+                        if (std.mem.eql(u8, s, util)) {
+                            already_added = true;
+                            break;
+                        }
+                    }
+                    if (!already_added) {
+                        try suggestions.append(util);
+                        if (suggestions.items.len >= 5) break;
+                    }
+                }
             }
         }
 
@@ -204,12 +237,39 @@ pub const ErrorReporter = struct {
     /// Print helpful hint based on utility pattern
     fn printHint(self: *const ErrorReporter, utility_name: []const u8) void {
         const hint: ?[]const u8 = blk: {
+            // Centering
             if (std.mem.indexOf(u8, utility_name, "center")) |_| {
                 break :blk "To center items, use: 'flex items-center justify-center'";
-            } else if (std.mem.startsWith(u8, utility_name, "color-")) {
+            }
+            // Color patterns
+            else if (std.mem.startsWith(u8, utility_name, "color-")) {
                 break :blk "Use 'text-{color}' for text color or 'bg-{color}' for background";
-            } else if (std.mem.startsWith(u8, utility_name, "padding-") or std.mem.startsWith(u8, utility_name, "margin-")) {
+            }
+            // Spacing patterns
+            else if (std.mem.startsWith(u8, utility_name, "padding-") or std.mem.startsWith(u8, utility_name, "margin-")) {
                 break :blk "Use shorthand: 'p-4' for padding, 'm-4' for margin";
+            }
+            // Width/Height
+            else if (std.mem.startsWith(u8, utility_name, "width-") or std.mem.startsWith(u8, utility_name, "height-")) {
+                break :blk "Use shorthand: 'w-{size}' for width, 'h-{size}' for height";
+            }
+            // Font size
+            else if (std.mem.startsWith(u8, utility_name, "font-size-")) {
+                break :blk "Use 'text-{size}' (e.g., text-sm, text-lg, text-xl)";
+            }
+            // Background
+            else if (std.mem.startsWith(u8, utility_name, "background-")) {
+                break :blk "Use 'bg-{color}' for background color";
+            }
+            // Display
+            else if (std.mem.eql(u8, utility_name, "display-flex")) {
+                break :blk "Use 'flex' instead of 'display-flex'";
+            } else if (std.mem.eql(u8, utility_name, "display-grid")) {
+                break :blk "Use 'grid' instead of 'display-grid'";
+            }
+            // Arbitrary values
+            else if (std.mem.indexOf(u8, utility_name, "(") != null or std.mem.indexOf(u8, utility_name, ")") != null) {
+                break :blk "For arbitrary values, use square brackets: 'w-[100px]' or 'bg-[#ff5733]'";
             }
             break :blk null;
         };
@@ -220,6 +280,120 @@ pub const ErrorReporter = struct {
             } else {
                 std.debug.print("  hint: {s}\n", .{h});
             }
+        }
+    }
+
+    /// Report arbitrary value syntax error
+    pub fn reportArbitraryValueError(
+        self: *const ErrorReporter,
+        class_name: []const u8,
+        error_msg: []const u8,
+    ) void {
+        self.reportError("Invalid arbitrary value in '{s}': {s}", .{ class_name, error_msg });
+
+        // Provide examples
+        if (self.colors_enabled) {
+            std.debug.print("  {s}Examples of valid arbitrary values:{s}\n", .{ Color.cyan.code(), Color.reset.code() });
+            std.debug.print("    {s}w-[100px]{s}          - Width with pixels\n", .{ Color.green.code(), Color.reset.code() });
+            std.debug.print("    {s}h-[calc(100vh-64px)]{s} - Height with calc\n", .{ Color.green.code(), Color.reset.code() });
+            std.debug.print("    {s}bg-[#ff5733]{s}      - Background with hex color\n", .{ Color.green.code(), Color.reset.code() });
+            std.debug.print("    {s}text-[14px]{s}       - Font size\n", .{ Color.green.code(), Color.reset.code() });
+        } else {
+            std.debug.print("  Examples of valid arbitrary values:\n", .{});
+            std.debug.print("    w-[100px]          - Width with pixels\n", .{});
+            std.debug.print("    h-[calc(100vh-64px)] - Height with calc\n", .{});
+            std.debug.print("    bg-[#ff5733]      - Background with hex color\n", .{});
+            std.debug.print("    text-[14px]       - Font size\n", .{});
+        }
+    }
+
+    /// Report variant error with suggestions
+    pub fn reportVariantError(
+        self: *const ErrorReporter,
+        variant: []const u8,
+        class_name: []const u8,
+    ) void {
+        self.reportError("Unknown variant '{s}' in '{s}'", .{ variant, class_name });
+
+        const common_variants = [_][]const u8{
+            "hover", "focus", "active", "disabled",
+            "md", "lg", "xl", "2xl", // Breakpoints
+            "dark", "light", // Dark mode
+            "group-hover", "peer-hover",
+            "first", "last", "odd", "even",
+            "focus-within", "focus-visible",
+        };
+
+        // Find similar variants
+        var found_suggestion = false;
+        for (common_variants) |v| {
+            const distance = levenshteinDistance(variant, v);
+            if (distance <= 2) {
+                if (!found_suggestion) {
+                    if (self.colors_enabled) {
+                        std.debug.print("  {s}Did you mean:{s} {s}{s}{s}\n", .{
+                            Color.cyan.code(),
+                            Color.reset.code(),
+                            Color.green.code(),
+                            v,
+                            Color.reset.code(),
+                        });
+                    } else {
+                        std.debug.print("  Did you mean: {s}\n", .{v});
+                    }
+                    found_suggestion = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found_suggestion) {
+            if (self.colors_enabled) {
+                std.debug.print("  {s}Common variants:{s} hover, focus, active, md, lg, dark\n", .{
+                    Color.cyan.code(),
+                    Color.reset.code(),
+                });
+            } else {
+                std.debug.print("  Common variants: hover, focus, active, md, lg, dark\n", .{});
+            }
+        }
+    }
+
+    /// Report file not found with helpful suggestions
+    pub fn reportFileNotFound(
+        self: *const ErrorReporter,
+        file_path: []const u8,
+    ) void {
+        self.reportError("File not found: {s}", .{file_path});
+
+        if (self.colors_enabled) {
+            std.debug.print("  {s}Check that:{s}\n", .{ Color.cyan.code(), Color.reset.code() });
+        } else {
+            std.debug.print("  Check that:\n", .{});
+        }
+
+        std.debug.print("    - The file path is correct\n", .{});
+        std.debug.print("    - The file exists in your project\n", .{});
+        std.debug.print("    - You have read permissions\n", .{});
+        std.debug.print("    - The file is included in your content configuration\n", .{});
+    }
+
+    /// Report performance warning
+    pub fn reportPerformanceWarning(
+        self: *const ErrorReporter,
+        message: []const u8,
+        suggestion: []const u8,
+    ) void {
+        self.reportWarning("{s}", .{message});
+
+        if (self.colors_enabled) {
+            std.debug.print("  {s}suggestion:{s} {s}\n", .{
+                Color.cyan.code(),
+                Color.reset.code(),
+                suggestion,
+            });
+        } else {
+            std.debug.print("  suggestion: {s}\n", .{suggestion});
         }
     }
 };
