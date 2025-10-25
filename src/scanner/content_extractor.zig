@@ -1,6 +1,7 @@
 const std = @import("std");
 const types = @import("../core/types.zig");
 const string_utils = @import("../utils/string.zig");
+const simd = @import("../utils/simd.zig");
 
 /// Extract CSS class names from various file formats
 pub const ContentExtractor = struct {
@@ -40,122 +41,146 @@ pub const ContentExtractor = struct {
     }
 
     /// Extract from HTML (class="..." and class='...')
+    /// OPTIMIZED: Uses SIMD for pattern matching
     fn extractFromHTML(self: *ContentExtractor, content: []const u8) ![][]const u8 {
         var classes: std.ArrayList([]const u8) = .{};
         errdefer classes.deinit(self.allocator);
 
         var i: usize = 0;
         while (i < content.len) {
-            // Look for class="..." or class='...'
-            if (i + 6 < content.len and std.mem.eql(u8, content[i .. i + 6], "class=")) {
-                i += 6;
+            // OPTIMIZATION: Use SIMD to find 'c' character (first char of "class=")
+            const remaining = content[i..];
+            if (simd.simdIndexOfScalar(remaining, 'c')) |offset| {
+                i += offset;
 
-                // Skip whitespace
-                while (i < content.len and std.ascii.isWhitespace(content[i])) {
+                // Look for class="..." or class='...'
+                if (i + 6 <= content.len and simd.simdStartsWith(content[i..], "class=")) {
+                    i += 6;
+
+                    // Skip whitespace
+                    while (i < content.len and std.ascii.isWhitespace(content[i])) {
+                        i += 1;
+                    }
+
+                    if (i >= content.len) break;
+
+                    const quote = content[i];
+                    if (quote != '"' and quote != '\'') {
+                        i += 1;
+                        continue;
+                    }
+
+                    i += 1; // Skip opening quote
+                    const start = i;
+
+                    // OPTIMIZATION: Use SIMD to find closing quote
+                    if (simd.simdIndexOfScalar(content[i..], quote)) |quote_offset| {
+                        i += quote_offset;
+
+                        if (i > start) {
+                            const class_string = content[start..i];
+                            try self.splitClasses(class_string, &classes);
+                        }
+                    } else {
+                        // No closing quote found, skip to end
+                        break;
+                    }
+                } else {
                     i += 1;
                 }
-
-                if (i >= content.len) break;
-
-                const quote = content[i];
-                if (quote != '"' and quote != '\'') {
-                    continue;
-                }
-
-                i += 1; // Skip opening quote
-                const start = i;
-
-                // Find closing quote
-                while (i < content.len and content[i] != quote) {
-                    i += 1;
-                }
-
-                if (i > start) {
-                    const class_string = content[start..i];
-                    try self.splitClasses(class_string, &classes);
-                }
+            } else {
+                // No more 'c' characters, done
+                break;
             }
-            i += 1;
         }
 
         return classes.toOwnedSlice(self.allocator);
     }
 
     /// Extract from JSX/TSX (className="..." and className={...})
+    /// OPTIMIZED: Uses SIMD for pattern matching
     fn extractFromJSX(self: *ContentExtractor, content: []const u8) ![][]const u8 {
         var classes: std.ArrayList([]const u8) = .{};
         errdefer classes.deinit(self.allocator);
 
         var i: usize = 0;
         while (i < content.len) {
-            // Look for className="..." or className='...'
-            if (i + 9 < content.len and std.mem.eql(u8, content[i .. i + 9], "className")) {
-                i += 9;
+            // OPTIMIZATION: Use SIMD to find 'c' character
+            const remaining = content[i..];
+            if (simd.simdIndexOfScalar(remaining, 'c')) |offset| {
+                i += offset;
 
-                // Skip whitespace and =
-                while (i < content.len and (std.ascii.isWhitespace(content[i]) or content[i] == '=')) {
-                    i += 1;
-                }
+                // Look for className="..." or className='...'
+                if (i + 9 <= content.len and simd.simdStartsWith(content[i..], "className")) {
+                    i += 9;
 
-                if (i >= content.len) break;
-
-                if (content[i] == '"' or content[i] == '\'') {
-                    // String literal
-                    const quote = content[i];
-                    i += 1;
-                    const start = i;
-
-                    while (i < content.len and content[i] != quote) {
+                    // Skip whitespace and =
+                    while (i < content.len and (std.ascii.isWhitespace(content[i]) or content[i] == '=')) {
                         i += 1;
                     }
 
-                    if (i > start) {
-                        const class_string = content[start..i];
-                        try self.splitClasses(class_string, &classes);
-                    }
-                } else if (content[i] == '{') {
-                    // Template expression - basic support for simple cases
-                    i += 1;
-                    const start = i;
-                    var brace_count: usize = 1;
+                    if (i >= content.len) break;
 
-                    while (i < content.len and brace_count > 0) {
-                        if (content[i] == '{') brace_count += 1;
-                        if (content[i] == '}') brace_count -= 1;
+                    if (content[i] == '"' or content[i] == '\'') {
+                        // String literal - use SIMD to find closing quote
+                        const quote = content[i];
+                        i += 1;
+                        const start = i;
+
+                        if (simd.simdIndexOfScalar(content[i..], quote)) |quote_offset| {
+                            i += quote_offset;
+
+                            if (i > start) {
+                                const class_string = content[start..i];
+                                try self.splitClasses(class_string, &classes);
+                            }
+                        }
+                    } else if (content[i] == '{') {
+                        // Template expression - basic support for simple cases
+                        i += 1;
+                        const start = i;
+                        var brace_count: usize = 1;
+
+                        while (i < content.len and brace_count > 0) {
+                            if (content[i] == '{') brace_count += 1;
+                            if (content[i] == '}') brace_count -= 1;
+                            i += 1;
+                        }
+
+                        // Try to extract string literals from the expression
+                        const expr = content[start .. i - 1];
+                        try self.extractFromExpression(expr, &classes);
+                    }
+                }
+                // Also look for class="..." (in JSX)
+                else if (i + 6 <= content.len and simd.simdStartsWith(content[i..], "class=")) {
+                    i += 6;
+
+                    while (i < content.len and (std.ascii.isWhitespace(content[i]) or content[i] == '=')) {
                         i += 1;
                     }
 
-                    // Try to extract string literals from the expression
-                    const expr = content[start .. i - 1];
-                    try self.extractFromExpression(expr, &classes);
+                    if (i < content.len and (content[i] == '"' or content[i] == '\'')) {
+                        const quote = content[i];
+                        i += 1;
+                        const start = i;
+
+                        if (simd.simdIndexOfScalar(content[i..], quote)) |quote_offset| {
+                            i += quote_offset;
+
+                            if (i > start) {
+                                const class_string = content[start..i];
+                                try self.splitClasses(class_string, &classes);
+                            }
+                        }
+                    }
+                } else {
+                    i += 1;
                 }
+            } else {
+                // No more 'c' characters
+                break;
             }
-
-            // Also look for class="..." (in JSX)
-            if (i + 6 < content.len and std.mem.eql(u8, content[i .. i + 6], "class=")) {
-                i += 6;
-
-                while (i < content.len and (std.ascii.isWhitespace(content[i]) or content[i] == '=')) {
-                    i += 1;
-                }
-
-                if (i < content.len and (content[i] == '"' or content[i] == '\'')) {
-                    const quote = content[i];
-                    i += 1;
-                    const start = i;
-
-                    while (i < content.len and content[i] != quote) {
-                        i += 1;
-                    }
-
-                    if (i > start) {
-                        const class_string = content[start..i];
-                        try self.splitClasses(class_string, &classes);
-                    }
-                }
-            }
-
-            i += 1;
         }
 
         return classes.toOwnedSlice(self.allocator);
