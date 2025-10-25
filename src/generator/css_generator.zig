@@ -417,11 +417,17 @@ pub const CSSGenerator = struct {
             }
         } else if (std.mem.startsWith(u8, utility_name, "font")) {
             try self.generateFont(parsed, utility_parts.value);
+        } else if (std.mem.eql(u8, utility_name, "antialiased")) {
+            try typography.generateAntialiased(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "subpixel") and utility_parts.value != null and std.mem.eql(u8, utility_parts.value.?, "antialiased")) {
+            try typography.generateSubpixelAntialiased(self, parsed);
         } else if (std.mem.eql(u8, utility_name, "italic") or std.mem.eql(u8, utility_name, "not-italic")) {
             try self.generateFontStyle(parsed);
         } else if (std.mem.eql(u8, utility_name, "underline") or std.mem.eql(u8, utility_name, "overline") or
                    std.mem.eql(u8, utility_name, "line-through") or std.mem.eql(u8, utility_name, "no-underline")) {
             try self.generateTextDecoration(parsed);
+        } else if (std.mem.eql(u8, utility_name, "decoration") and utility_parts.value != null) {
+            try self.generateDecorationStyle(parsed, utility_parts.value.?);
         } else if (std.mem.eql(u8, utility_name, "uppercase") or std.mem.eql(u8, utility_name, "lowercase") or
                    std.mem.eql(u8, utility_name, "capitalize") or std.mem.eql(u8, utility_name, "normal-case")) {
             try self.generateTextTransform(parsed);
@@ -438,9 +444,10 @@ pub const CSSGenerator = struct {
             try self.generateVerticalAlign(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "list-image")) {
             try self.generateListStyleImage(parsed, utility_parts.value);
-        } else if (std.mem.startsWith(u8, utility_name, "list-inside") or std.mem.startsWith(u8, utility_name, "list-outside")) {
-            const position_value = utility_name[5..]; // Skip "list-"
-            try self.generateListStylePosition(parsed, position_value);
+        } else if (std.mem.eql(u8, utility_name, "list") and utility_parts.value != null and std.mem.eql(u8, utility_parts.value.?, "inside")) {
+            try typography.generateListInside(self, parsed);
+        } else if (std.mem.eql(u8, utility_name, "list") and utility_parts.value != null and std.mem.eql(u8, utility_parts.value.?, "outside")) {
+            try typography.generateListOutside(self, parsed);
         } else if (std.mem.startsWith(u8, utility_name, "list")) {
             try self.generateListStyleType(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "columns")) {
@@ -1144,6 +1151,10 @@ pub const CSSGenerator = struct {
         } else if (std.mem.eql(u8, utility_name, "no-underline")) {
             return typography.generateNoUnderline(self, parsed);
         }
+    }
+
+    fn generateDecorationStyle(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, style: []const u8) !void {
+        return typography.generateDecorationStyle(self, parsed, style);
     }
 
     fn generateTextTransform(self: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
