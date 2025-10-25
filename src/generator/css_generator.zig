@@ -383,7 +383,12 @@ pub const CSSGenerator = struct {
         } else if (std.mem.startsWith(u8, utility_name, "h")) {
             try self.generateHeight(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "text")) {
-            // Check for text-wrap utilities first
+            // Check for text-overflow utilities first (text-ellipsis, text-clip)
+            if (std.mem.eql(u8, parsed.utility, "text-ellipsis") or std.mem.eql(u8, parsed.utility, "text-clip")) {
+                try self.generateTextOverflow(parsed);
+                return;
+            }
+            // Check for text-wrap utilities
             if (utility_parts.value) |val| {
                 if (std.mem.eql(u8, val, "wrap") or std.mem.eql(u8, val, "nowrap") or
                     std.mem.eql(u8, val, "balance") or std.mem.eql(u8, val, "pretty")) {
@@ -421,18 +426,18 @@ pub const CSSGenerator = struct {
             try typography.generateAntialiased(self, parsed);
         } else if (std.mem.eql(u8, utility_name, "subpixel") and utility_parts.value != null and std.mem.eql(u8, utility_parts.value.?, "antialiased")) {
             try typography.generateSubpixelAntialiased(self, parsed);
-        } else if (std.mem.eql(u8, utility_name, "italic") or std.mem.eql(u8, utility_name, "not-italic")) {
+        } else if (std.mem.eql(u8, utility_name, "italic") or std.mem.eql(u8, parsed.utility, "not-italic")) {
             try self.generateFontStyle(parsed);
         } else if (std.mem.eql(u8, utility_name, "underline") or std.mem.eql(u8, utility_name, "overline") or
-                   std.mem.eql(u8, utility_name, "line-through") or std.mem.eql(u8, utility_name, "no-underline")) {
+                   std.mem.eql(u8, parsed.utility, "line-through") or std.mem.eql(u8, parsed.utility, "no-underline")) {
             try self.generateTextDecoration(parsed);
         } else if (std.mem.eql(u8, utility_name, "decoration") and utility_parts.value != null) {
             try self.generateDecorationStyle(parsed, utility_parts.value.?);
         } else if (std.mem.eql(u8, utility_name, "uppercase") or std.mem.eql(u8, utility_name, "lowercase") or
-                   std.mem.eql(u8, utility_name, "capitalize") or std.mem.eql(u8, utility_name, "normal-case")) {
+                   std.mem.eql(u8, utility_name, "capitalize") or std.mem.eql(u8, parsed.utility, "normal-case")) {
             try self.generateTextTransform(parsed);
-        } else if (std.mem.eql(u8, utility_name, "truncate") or std.mem.eql(u8, utility_name, "text-ellipsis") or
-                   std.mem.eql(u8, utility_name, "text-clip")) {
+        } else if (std.mem.eql(u8, utility_name, "truncate") or std.mem.eql(u8, parsed.utility, "text-ellipsis") or
+                   std.mem.eql(u8, parsed.utility, "text-clip")) {
             try self.generateTextOverflow(parsed);
         } else if (std.mem.startsWith(u8, utility_name, "leading")) {
             try self.generateLineHeight(parsed, utility_parts.value);
@@ -534,6 +539,8 @@ pub const CSSGenerator = struct {
             } else {
                 try self.generateBorder(parsed, utility_parts.value);
             }
+        } else if (std.mem.startsWith(u8, utility_name, "outline")) {
+            try self.generateOutline(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "rounded")) {
             try self.generateBorderRadius(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "from")) {
@@ -1234,6 +1241,20 @@ pub const CSSGenerator = struct {
     fn generateBorderColor(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
         const val = value orelse return;
         return borders.generateBorderColor(self, parsed, val);
+    }
+
+    fn generateOutline(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
+        var rule = try self.createRule(parsed);
+        errdefer rule.deinit(self.allocator);
+
+        if (value) |val| {
+            if (std.mem.eql(u8, val, "none")) {
+                try rule.addDeclaration(self.allocator, "outline", "2px solid transparent");
+                try rule.addDeclaration(self.allocator, "outline-offset", "2px");
+            }
+        }
+
+        try self.rules.append(self.allocator, rule);
     }
 
     // Background utilities

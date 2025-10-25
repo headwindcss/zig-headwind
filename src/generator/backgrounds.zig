@@ -63,6 +63,13 @@ pub fn generateBgColor(generator: *CSSGenerator, parsed: *const class_parser.Par
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
 
+    // Handle arbitrary values first
+    if (parsed.is_arbitrary and parsed.arbitrary_value != null) {
+        try rule.addDeclaration(generator.allocator, "background-color", parsed.arbitrary_value.?);
+        try generator.rules.append(generator.allocator, rule);
+        return;
+    }
+
     const oklch_value = colors.resolveColor(value) orelse {
         rule.deinit(generator.allocator);
         return;

@@ -57,7 +57,10 @@ pub fn generateWidth(generator: *CSSGenerator, parsed: *const class_parser.Parse
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
 
-    const width_value = if (width_special.get(value)) |special|
+    // Handle arbitrary values first
+    const width_value = if (parsed.is_arbitrary and parsed.arbitrary_value != null)
+        parsed.arbitrary_value.?
+    else if (width_special.get(value)) |special|
         special
     else if (width_fractions.get(value)) |fraction|
         fraction

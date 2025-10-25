@@ -46,17 +46,18 @@ pub const spacing_scale = std.StaticStringMap([]const u8).initComptime(.{
 pub fn generatePadding(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
     if (value == null) return;
 
-    // Check for arbitrary value first
+    // Check for arbitrary value first, then "auto", then spacing scale
     const spacing_value = if (parsed.is_arbitrary and parsed.arbitrary_value != null)
         parsed.arbitrary_value.?
+    else if (std.mem.eql(u8, value.?, "auto"))
+        "auto"
     else
         spacing_scale.get(value.?) orelse return;
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
-    errdefer rule.deinit(generator.allocator);
 
-    // Extract utility name (before brackets if arbitrary)
+    // Extract utility name (before brackets if arbitrary, or before dash for regular)
     const utility = parsed.utility;
     const utility_name = if (parsed.is_arbitrary) blk: {
         // For "p-[20px]", extract "p"
@@ -64,7 +65,13 @@ pub fn generatePadding(generator: *CSSGenerator, parsed: *const class_parser.Par
             break :blk utility[0..idx];
         }
         break :blk utility;
-    } else utility;
+    } else blk: {
+        // For "p-4", extract "p"
+        if (std.mem.indexOf(u8, utility, "-")) |idx| {
+            break :blk utility[0..idx];
+        }
+        break :blk utility;
+    };
 
     if (std.mem.eql(u8, utility_name, "p")) {
         // All sides
@@ -101,9 +108,11 @@ pub fn generateMargin(generator: *CSSGenerator, parsed: *const class_parser.Pars
     const utility = parsed.utility;
     const is_negative = std.mem.startsWith(u8, utility, "-");
 
-    // Check for arbitrary value first
+    // Check for arbitrary value first, then "auto", then spacing scale
     const spacing_value = if (parsed.is_arbitrary and parsed.arbitrary_value != null)
         parsed.arbitrary_value.?
+    else if (std.mem.eql(u8, value.?, "auto"))
+        "auto"
     else
         spacing_scale.get(value.?) orelse return;
 
@@ -168,16 +177,18 @@ pub fn generateMargin(generator: *CSSGenerator, parsed: *const class_parser.Pars
 pub fn generateGap(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
     if (value == null) return;
 
-    // Check for arbitrary value first
+    // Check for arbitrary value first, then "auto", then spacing scale
     const spacing_value = if (parsed.is_arbitrary and parsed.arbitrary_value != null)
         parsed.arbitrary_value.?
+    else if (std.mem.eql(u8, value.?, "auto"))
+        "auto"
     else
         spacing_scale.get(value.?) orelse return;
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
 
-    // Extract utility name (before brackets if arbitrary)
+    // Extract utility name (before brackets if arbitrary, or before dash for regular)
     const utility = parsed.utility;
     const utility_name = if (parsed.is_arbitrary) blk: {
         // For "gap-[15px]", extract "gap"
@@ -185,7 +196,13 @@ pub fn generateGap(generator: *CSSGenerator, parsed: *const class_parser.ParsedC
             break :blk utility[0..idx];
         }
         break :blk utility;
-    } else utility;
+    } else blk: {
+        // For "gap-4", extract "gap"
+        if (std.mem.indexOf(u8, utility, "-")) |idx| {
+            break :blk utility[0..idx];
+        }
+        break :blk utility;
+    };
 
     if (std.mem.eql(u8, utility_name, "gap")) {
         try rule.addDeclaration(generator.allocator, "gap", spacing_value);
