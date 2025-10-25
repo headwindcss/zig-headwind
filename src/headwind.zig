@@ -10,6 +10,7 @@ pub const string = @import("utils/string.zig");
 // Configuration
 pub const config = @import("config/schema.zig");
 pub const config_loader = @import("config/loader.zig");
+pub const theme = @import("config/theme.zig");
 
 // Scanner
 pub const Scanner = @import("scanner/scanner.zig").Scanner;
@@ -19,9 +20,16 @@ pub const ContentExtractor = @import("scanner/content_extractor.zig").ContentExt
 // Parser
 pub const class_parser = @import("parser/class_parser.zig");
 pub const ParsedClass = class_parser.ParsedClass;
+pub const theme_reference = @import("parser/theme_reference.zig");
 
 // Cache
 pub const FileCache = @import("cache/file_cache.zig").FileCache;
+
+// Validators
+pub const css_variable = @import("validator/css_variable.zig");
+
+// Variants
+pub const variant_registry = @import("variants/registry.zig");
 
 // Generator
 pub const CSSGenerator = @import("generator/css_generator.zig").CSSGenerator;
