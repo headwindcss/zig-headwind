@@ -27,6 +27,11 @@ pub const FileCache = @import("cache/file_cache.zig").FileCache;
 pub const CSSGenerator = @import("generator/css_generator.zig").CSSGenerator;
 pub const CSSRule = @import("generator/css_generator.zig").CSSRule;
 pub const colors = @import("generator/colors.zig");
+pub const backgrounds = @import("generator/backgrounds.zig");
+pub const borders = @import("generator/borders.zig");
+pub const sizing = @import("generator/sizing.zig");
+pub const spacing = @import("generator/spacing.zig");
+pub const typography = @import("generator/typography.zig");
 
 // Plugin system
 pub const Plugin = @import("plugin/plugin.zig").Plugin;
