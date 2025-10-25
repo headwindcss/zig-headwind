@@ -5,6 +5,10 @@
 
 import { bench, group, run } from 'mitata';
 import { execSync } from 'child_process';
+import { writeFileSync, mkdirSync, rmSync } from 'fs';
+
+// Create temp directory
+mkdirSync('temp', { recursive: true });
 
 // Test data for different parsing scenarios
 const testCases = {
@@ -19,10 +23,14 @@ const testCases = {
   veryLong: Array(1000).fill('hover:bg-blue-600 focus:ring-2 active:scale-95').join(' '),
 };
 
+function createTestHTML(classes: string): string {
+  return `<!DOCTYPE html><html><body><div class="${classes}"></div></body></html>`;
+}
+
 group('Parser - Simple Classes', () => {
   bench('Parse simple utilities', () => {
-    execSync(`echo "${testCases.simple}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/simple.html', createTestHTML(testCases.simple));
+    execSync('../zig-out/bin/headwind build temp/simple.html -o temp/simple.css', {
       stdio: 'pipe',
     });
   });
@@ -30,22 +38,22 @@ group('Parser - Simple Classes', () => {
 
 group('Parser - Variants', () => {
   bench('Parse single variants', () => {
-    execSync(`echo "${testCases.withVariants}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/variants.html', createTestHTML(testCases.withVariants));
+    execSync('../zig-out/bin/headwind build temp/variants.html -o temp/variants.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Parse multiple variants', () => {
-    execSync(`echo "${testCases.multipleVariants}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/multi-variants.html', createTestHTML(testCases.multipleVariants));
+    execSync('../zig-out/bin/headwind build temp/multi-variants.html -o temp/multi-variants.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Parse complex variants', () => {
-    execSync(`echo "${testCases.complex}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/complex.html', createTestHTML(testCases.complex));
+    execSync('../zig-out/bin/headwind build temp/complex.html -o temp/complex.css', {
       stdio: 'pipe',
     });
   });
@@ -53,8 +61,8 @@ group('Parser - Variants', () => {
 
 group('Parser - Arbitrary Values', () => {
   bench('Parse arbitrary values', () => {
-    execSync(`echo "${testCases.arbitraryValues}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/arbitrary.html', createTestHTML(testCases.arbitraryValues));
+    execSync('../zig-out/bin/headwind build temp/arbitrary.html -o temp/arbitrary.css', {
       stdio: 'pipe',
     });
   });
@@ -62,15 +70,15 @@ group('Parser - Arbitrary Values', () => {
 
 group('Parser - Special Cases', () => {
   bench('Parse important modifier', () => {
-    execSync(`echo "${testCases.important}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/important.html', createTestHTML(testCases.important));
+    execSync('../zig-out/bin/headwind build temp/important.html -o temp/important.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Parse negative values', () => {
-    execSync(`echo "${testCases.negative}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/negative.html', createTestHTML(testCases.negative));
+    execSync('../zig-out/bin/headwind build temp/negative.html -o temp/negative.css', {
       stdio: 'pipe',
     });
   });
@@ -78,15 +86,15 @@ group('Parser - Special Cases', () => {
 
 group('Parser - Scale Testing', () => {
   bench('Parse 100 classes', () => {
-    execSync(`echo "${testCases.long}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/long.html', createTestHTML(testCases.long));
+    execSync('../zig-out/bin/headwind build temp/long.html -o temp/long.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Parse 1000 classes', () => {
-    execSync(`echo "${testCases.veryLong}" | ../zig-out/bin/headwind parse`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/very-long.html', createTestHTML(testCases.veryLong));
+    execSync('../zig-out/bin/headwind build temp/very-long.html -o temp/very-long.css', {
       stdio: 'pipe',
     });
   });
@@ -104,3 +112,6 @@ await run({
 });
 
 console.log('\n✅ Parser benchmarks complete!');
+
+// Cleanup
+rmSync('temp', { recursive: true, force: true });

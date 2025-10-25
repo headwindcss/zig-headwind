@@ -5,6 +5,10 @@
 
 import { bench, group, run } from 'mitata';
 import { execSync } from 'child_process';
+import { writeFileSync, mkdirSync, rmSync } from 'fs';
+
+// Create temp directory
+mkdirSync('temp', { recursive: true });
 
 // Test sets for different utility categories
 const utilities = {
@@ -26,10 +30,14 @@ const utilities = {
   ].join(' '),
 };
 
+function createTestHTML(classes: string): string {
+  return `<!DOCTYPE html><html><body><div class="${classes}"></div></body></html>`;
+}
+
 group('Generator - Color Utilities', () => {
   bench('Generate color CSS', () => {
-    execSync(`echo "${utilities.colors}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/colors.html', createTestHTML(utilities.colors));
+    execSync('../zig-out/bin/headwind build temp/colors.html -o temp/colors.css', {
       stdio: 'pipe',
     });
   });
@@ -37,8 +45,8 @@ group('Generator - Color Utilities', () => {
 
 group('Generator - Typography Utilities', () => {
   bench('Generate typography CSS', () => {
-    execSync(`echo "${utilities.typography}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/typography.html', createTestHTML(utilities.typography));
+    execSync('../zig-out/bin/headwind build temp/typography.html -o temp/typography.css', {
       stdio: 'pipe',
     });
   });
@@ -46,8 +54,8 @@ group('Generator - Typography Utilities', () => {
 
 group('Generator - Spacing Utilities', () => {
   bench('Generate spacing CSS', () => {
-    execSync(`echo "${utilities.spacing}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/spacing.html', createTestHTML(utilities.spacing));
+    execSync('../zig-out/bin/headwind build temp/spacing.html -o temp/spacing.css', {
       stdio: 'pipe',
     });
   });
@@ -55,8 +63,8 @@ group('Generator - Spacing Utilities', () => {
 
 group('Generator - Sizing Utilities', () => {
   bench('Generate sizing CSS', () => {
-    execSync(`echo "${utilities.sizing}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/sizing.html', createTestHTML(utilities.sizing));
+    execSync('../zig-out/bin/headwind build temp/sizing.html -o temp/sizing.css', {
       stdio: 'pipe',
     });
   });
@@ -64,8 +72,8 @@ group('Generator - Sizing Utilities', () => {
 
 group('Generator - Layout Utilities', () => {
   bench('Generate layout CSS (flexbox + grid)', () => {
-    execSync(`echo "${utilities.layout}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/layout.html', createTestHTML(utilities.layout));
+    execSync('../zig-out/bin/headwind build temp/layout.html -o temp/layout.css', {
       stdio: 'pipe',
     });
   });
@@ -73,8 +81,8 @@ group('Generator - Layout Utilities', () => {
 
 group('Generator - Border Utilities', () => {
   bench('Generate border CSS', () => {
-    execSync(`echo "${utilities.borders}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/borders.html', createTestHTML(utilities.borders));
+    execSync('../zig-out/bin/headwind build temp/borders.html -o temp/borders.css', {
       stdio: 'pipe',
     });
   });
@@ -82,8 +90,8 @@ group('Generator - Border Utilities', () => {
 
 group('Generator - Effects & Filters', () => {
   bench('Generate effects CSS', () => {
-    execSync(`echo "${utilities.effects}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/effects.html', createTestHTML(utilities.effects));
+    execSync('../zig-out/bin/headwind build temp/effects.html -o temp/effects.css', {
       stdio: 'pipe',
     });
   });
@@ -91,8 +99,8 @@ group('Generator - Effects & Filters', () => {
 
 group('Generator - Transforms', () => {
   bench('Generate transform CSS', () => {
-    execSync(`echo "${utilities.transforms}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/transforms.html', createTestHTML(utilities.transforms));
+    execSync('../zig-out/bin/headwind build temp/transforms.html -o temp/transforms.css', {
       stdio: 'pipe',
     });
   });
@@ -100,8 +108,8 @@ group('Generator - Transforms', () => {
 
 group('Generator - Transitions & Animations', () => {
   bench('Generate transition CSS', () => {
-    execSync(`echo "${utilities.transitions}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/transitions.html', createTestHTML(utilities.transitions));
+    execSync('../zig-out/bin/headwind build temp/transitions.html -o temp/transitions.css', {
       stdio: 'pipe',
     });
   });
@@ -109,8 +117,8 @@ group('Generator - Transitions & Animations', () => {
 
 group('Generator - Responsive Variants', () => {
   bench('Generate responsive CSS', () => {
-    execSync(`echo "${utilities.responsive}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/responsive.html', createTestHTML(utilities.responsive));
+    execSync('../zig-out/bin/headwind build temp/responsive.html -o temp/responsive.css', {
       stdio: 'pipe',
     });
   });
@@ -118,8 +126,8 @@ group('Generator - Responsive Variants', () => {
 
 group('Generator - Dark Mode', () => {
   bench('Generate dark mode CSS', () => {
-    execSync(`echo "${utilities.darkMode}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/darkmode.html', createTestHTML(utilities.darkMode));
+    execSync('../zig-out/bin/headwind build temp/darkmode.html -o temp/darkmode.css', {
       stdio: 'pipe',
     });
   });
@@ -127,8 +135,8 @@ group('Generator - Dark Mode', () => {
 
 group('Generator - Complete Build', () => {
   bench('Generate complete CSS (all utilities)', () => {
-    execSync(`echo "${utilities.all}" | ../zig-out/bin/headwind build --stdout`, {
-      encoding: 'utf-8',
+    writeFileSync('temp/all.html', createTestHTML(utilities.all));
+    execSync('../zig-out/bin/headwind build temp/all.html -o temp/all.css', {
       stdio: 'pipe',
     });
   });
@@ -146,3 +154,6 @@ await run({
 });
 
 console.log('\n✅ Generator benchmarks complete!');
+
+// Cleanup
+rmSync('temp', { recursive: true, force: true });

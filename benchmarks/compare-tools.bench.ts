@@ -3,21 +3,19 @@
  *
  * Tools compared:
  * - zig-headwind (this project)
- * - Tailwind CSS v3
+ * - Tailwind CSS v3 (Node.js)
  * - UnoCSS
  *
  * Metrics:
  * - Parse time
  * - Generate time
  * - Total build time
- * - Memory usage
  * - Output size (minified)
  */
 
 import { bench, group, run } from 'mitata';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, writeFileSync, mkdirSync, statSync, rmSync } from 'fs';
 
 // Test HTML with various Tailwind classes
 const TEST_HTML = `
@@ -69,65 +67,52 @@ writeFileSync('temp/test.html', TEST_HTML);
 // Tailwind CSS config
 const TAILWIND_CONFIG = `
 module.exports = {
-  content: ['temp/test.html'],
+  content: ['./temp/**/*.html'],
   theme: {
     extend: {},
   },
   plugins: [],
 }
 `;
-writeFileSync('temp/tailwind.config.js', TAILWIND_CONFIG);
+writeFileSync('tailwind.config.js', TAILWIND_CONFIG);
+
+// Tailwind input CSS
+const TAILWIND_INPUT = `@tailwind base; @tailwind components; @tailwind utilities;`;
+writeFileSync('temp/input.css', TAILWIND_INPUT);
 
 // UnoCSS config
-const UNOCSS_CONFIG = `
-import { defineConfig } from 'unocss'
+const UNO_CONFIG = `
+import { defineConfig, presetUno } from 'unocss';
 
 export default defineConfig({
-  // your config
-})
+  presets: [presetUno()],
+});
 `;
-writeFileSync('temp/uno.config.ts', UNOCSS_CONFIG);
+writeFileSync('uno.config.ts', UNO_CONFIG);
 
-// Helper to measure execution time and memory
-function measureTool(name: string, command: string) {
-  const start = performance.now();
-  let memoryUsed = 0;
+console.log('🏁 Running comparative benchmarks...\n');
+console.log('Tools being compared:');
+console.log('  - zig-headwind (Zig native)');
+console.log('  - Tailwind CSS v3 (Node.js)');
+console.log('  - UnoCSS (Node.js)\n');
 
-  try {
-    const result = execSync(command, {
-      cwd: 'temp',
-      encoding: 'utf-8',
-      stdio: 'pipe',
-    });
+const results: Record<string, number> = {};
 
-    const end = performance.now();
-    const time = end - start;
-
-    return { time, output: result, error: null };
-  } catch (error: any) {
-    return { time: 0, output: '', error: error.message };
-  }
-}
-
-// Benchmark groups
 group('Build Time Comparison', () => {
   bench('zig-headwind', () => {
-    execSync('../zig-out/bin/headwind build', {
-      cwd: 'temp',
+    execSync('../zig-out/bin/headwind build temp/test.html -o temp/headwind-output.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Tailwind CSS v3', () => {
-    execSync('npx tailwindcss -i input.css -o output.css --minify', {
-      cwd: 'temp',
+    execSync('./node_modules/.bin/tailwindcss -i temp/input.css -o temp/tailwind-output.css --minify', {
       stdio: 'pipe',
     });
   });
 
   bench('UnoCSS', () => {
-    execSync('npx unocss "**/*.html" -o output.css', {
-      cwd: 'temp',
+    execSync('./node_modules/.bin/unocss temp/**/*.html -o temp/uno-output.css --minify', {
       stdio: 'pipe',
     });
   });
@@ -135,106 +120,70 @@ group('Build Time Comparison', () => {
 
 group('Cold Start Performance', () => {
   bench('zig-headwind (cold)', () => {
-    execSync('../zig-out/bin/headwind build --no-cache', {
-      cwd: 'temp',
+    try {
+      rmSync('temp/headwind-output.css', { force: true });
+    } catch {}
+    execSync('../zig-out/bin/headwind build temp/test.html -o temp/headwind-output.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Tailwind CSS (cold)', () => {
-    execSync('rm -rf .cache && npx tailwindcss -i input.css -o output.css', {
-      cwd: 'temp',
+    try {
+      rmSync('temp/tailwind-output.css', { force: true });
+      rmSync('.tailwindcss', { recursive: true, force: true });
+    } catch {}
+    execSync('./node_modules/.bin/tailwindcss -i temp/input.css -o temp/tailwind-output.css', {
       stdio: 'pipe',
     });
   });
 
   bench('UnoCSS (cold)', () => {
-    execSync('rm -rf .cache && npx unocss "**/*.html" -o output.css', {
-      cwd: 'temp',
+    try {
+      rmSync('temp/uno-output.css', { force: true });
+      rmSync('.uno.cache', { recursive: true, force: true });
+    } catch {}
+    execSync('./node_modules/.bin/unocss temp/**/*.html -o temp/uno-output.css', {
       stdio: 'pipe',
     });
   });
 });
-
-group('Incremental Build Performance', () => {
-  bench('zig-headwind (incremental)', () => {
-    execSync('../zig-out/bin/headwind build --incremental', {
-      cwd: 'temp',
-      stdio: 'pipe',
-    });
-  });
-
-  bench('Tailwind CSS (incremental)', () => {
-    execSync('npx tailwindcss -i input.css -o output.css --minify', {
-      cwd: 'temp',
-      stdio: 'pipe',
-    });
-  });
-});
-
-group('Output Size Comparison', () => {
-  bench('zig-headwind (minified)', () => {
-    const result = execSync('../zig-out/bin/headwind build --minify', {
-      cwd: 'temp',
-      encoding: 'utf-8',
-    });
-    return result.length;
-  });
-
-  bench('Tailwind CSS (minified)', () => {
-    const result = execSync('npx tailwindcss -i input.css -o output.css --minify', {
-      cwd: 'temp',
-      encoding: 'utf-8',
-    });
-    return result.length;
-  });
-
-  bench('UnoCSS (minified)', () => {
-    const result = execSync('npx unocss "**/*.html" -o output.css --minify', {
-      cwd: 'temp',
-      encoding: 'utf-8',
-    });
-    return result.length;
-  });
-});
-
-console.log('🏁 Running comparative benchmarks...\n');
-console.log('Tools being compared:');
-console.log('  - zig-headwind (Zig native)');
-console.log('  - Tailwind CSS v3 (Node.js)');
-console.log('  - UnoCSS (Node.js)');
-console.log('');
 
 await run({
   units: false,
   silent: false,
   avg: true,
-  json: true,
+  json: false,
   colors: true,
   min_max: true,
   percentiles: true,
 });
 
-// Generate detailed report
-console.log('\n📊 Detailed Performance Report');
+// Measure output sizes
+console.log('\n📊 Output Size Comparison');
 console.log('================================\n');
 
-const headwindResult = measureTool('zig-headwind', '../zig-out/bin/headwind build');
-const tailwindResult = measureTool('Tailwind CSS', 'npx tailwindcss -i input.css -o output.css --minify');
-const unocssResult = measureTool('UnoCSS', 'npx unocss "**/*.html" -o output.css');
+try {
+  const headwindSize = statSync('temp/headwind-output.css').size;
+  const tailwindSize = statSync('temp/tailwind-output.css').size;
+  const unoSize = statSync('temp/uno-output.css').size;
 
-console.log('Build Times:');
-console.log(`  zig-headwind: ${headwindResult.time.toFixed(2)}ms`);
-console.log(`  Tailwind CSS: ${tailwindResult.time.toFixed(2)}ms`);
-console.log(`  UnoCSS:       ${unocssResult.time.toFixed(2)}ms`);
-console.log('');
+  console.log(`zig-headwind: ${(headwindSize / 1024).toFixed(2)} KB`);
+  console.log(`Tailwind CSS: ${(tailwindSize / 1024).toFixed(2)} KB`);
+  console.log(`UnoCSS:       ${(unoSize / 1024).toFixed(2)} KB\n`);
 
-console.log('Speed Comparison:');
-if (headwindResult.time > 0) {
-  const tailwindSpeedup = tailwindResult.time / headwindResult.time;
-  const unocssSpeedup = unocssResult.time / headwindResult.time;
-  console.log(`  zig-headwind is ${tailwindSpeedup.toFixed(2)}x faster than Tailwind CSS`);
-  console.log(`  zig-headwind is ${unocssSpeedup.toFixed(2)}x faster than UnoCSS`);
+  const smallest = Math.min(headwindSize, tailwindSize, unoSize);
+  console.log('Winner (smallest):');
+  if (headwindSize === smallest) console.log('  🏆 zig-headwind');
+  else if (tailwindSize === smallest) console.log('  🏆 Tailwind CSS');
+  else console.log('  🏆 UnoCSS');
+} catch (e) {
+  console.log('Could not measure output sizes');
 }
 
 console.log('\n✅ Comparative benchmarks complete!');
+
+// Cleanup
+rmSync('temp', { recursive: true, force: true });
+rmSync('tailwind.config.js', { force: true });
+rmSync('uno.config.ts', { force: true });
