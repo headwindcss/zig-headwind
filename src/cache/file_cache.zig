@@ -61,14 +61,13 @@ pub const FileCache = struct {
             }
         }
 
-        // Update mtime cache
-        if (self.file_mtimes.get(file_path)) |old_mtime| {
-            if (old_mtime != current_mtime) {
-                try self.file_mtimes.put(try self.allocator.dupe(u8, file_path), current_mtime);
-            }
-        } else {
-            try self.file_mtimes.put(try self.allocator.dupe(u8, file_path), current_mtime);
+        // Update mtime cache - only allocate new key if not already present
+        const gop = try self.file_mtimes.getOrPut(file_path);
+        if (!gop.found_existing) {
+            // New entry - allocate owned key
+            gop.key_ptr.* = try self.allocator.dupe(u8, file_path);
         }
+        gop.value_ptr.* = current_mtime;
 
         // Disk cache check removed - it was causing slowdowns
         // Better to just re-scan the file than deal with disk I/O overhead
@@ -106,8 +105,12 @@ pub const FileCache = struct {
 
         try self.entries.put(owned_path, entry);
 
-        // Update mtime tracking
-        try self.file_mtimes.put(try self.allocator.dupe(u8, file_path), mtime);
+        // Update mtime tracking - only allocate new key if not already present
+        const gop = try self.file_mtimes.getOrPut(file_path);
+        if (!gop.found_existing) {
+            gop.key_ptr.* = try self.allocator.dupe(u8, file_path);
+        }
+        gop.value_ptr.* = mtime;
 
         // Disk caching disabled for performance
         // Disk I/O overhead was higher than re-scanning files
@@ -144,7 +147,8 @@ pub const FileCache = struct {
         defer file.close();
 
         const stat = try file.stat();
-        return stat.mtime;
+        // In Zig 0.16+, mtime is a Timestamp struct with nanoseconds field
+        return @intCast(stat.mtime.nanoseconds);
     }
 
     /// Load cache from disk (DISABLED for performance)

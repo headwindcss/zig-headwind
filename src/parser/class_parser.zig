@@ -172,12 +172,14 @@ pub fn parseClass(allocator: std.mem.Allocator, class_str: []const u8) !ParsedCl
 pub fn parseUtility(utility: []const u8) struct { name: []const u8, value: ?[]const u8 } {
     // OPTIMIZATION: Find first dash without scanning brackets
     var i: usize = 0;
-    var bracket_depth: u32 = 0;
+    var bracket_depth: i32 = 0; // Use signed int to handle malformed input
 
     while (i < utility.len) : (i += 1) {
         switch (utility[i]) {
             '[' => bracket_depth += 1,
-            ']' => bracket_depth -= 1,
+            ']' => {
+                if (bracket_depth > 0) bracket_depth -= 1;
+            },
             '-' => {
                 if (bracket_depth == 0 and i > 0) {
                     // Found the separator dash

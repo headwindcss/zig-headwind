@@ -65,24 +65,24 @@ pub const FileWatcher = struct {
 
     /// Simple polling implementation (fallback)
     fn pollForChanges(self: *FileWatcher) !void {
-        var file_times = std.StringHashMap(i128).init(self.allocator);
+        var file_times = std.StringHashMap(i96).init(self.allocator);
         defer file_times.deinit();
 
         // Initialize file modification times
         for (self.paths.items) |path| {
             const stat = std.fs.cwd().statFile(path) catch continue;
-            try file_times.put(path, stat.mtime);
+            try file_times.put(path, stat.mtime.nanoseconds);
         }
 
         while (self.running.load(.seq_cst)) {
-            std.Thread.sleep(500 * std.time.ns_per_ms); // Poll every 500ms
+            std.posix.nanosleep(0, 500 * std.time.ns_per_ms); // Poll every 500ms
 
             for (self.paths.items) |path| {
                 const stat = std.fs.cwd().statFile(path) catch continue;
                 const old_time = file_times.get(path) orelse continue;
 
-                if (stat.mtime != old_time) {
-                    try file_times.put(path, stat.mtime);
+                if (stat.mtime.nanoseconds != old_time) {
+                    try file_times.put(path, stat.mtime.nanoseconds);
                     self.callback(path);
                 }
             }
@@ -95,7 +95,7 @@ pub const Debouncer = struct {
     allocator: std.mem.Allocator,
     delay_ms: u64,
     timer: ?std.time.Timer,
-    last_event: i64,
+    last_event_ns: u64,
     mutex: std.Thread.Mutex,
 
     pub fn init(allocator: std.mem.Allocator, delay_ms: u64) Debouncer {
@@ -103,7 +103,7 @@ pub const Debouncer = struct {
             .allocator = allocator,
             .delay_ms = delay_ms,
             .timer = null,
-            .last_event = 0,
+            .last_event_ns = 0,
             .mutex = std.Thread.Mutex{},
         };
     }
@@ -112,11 +112,17 @@ pub const Debouncer = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        const now = std.time.milliTimestamp();
-        const elapsed = now - self.last_event;
+        // Use Timer to get current time
+        if (self.timer == null) {
+            self.timer = std.time.Timer.start() catch return true;
+        }
 
-        if (elapsed >= self.delay_ms) {
-            self.last_event = now;
+        var timer = self.timer.?;
+        const now_ns = timer.read();
+        const elapsed_ms = (now_ns - self.last_event_ns) / std.time.ns_per_ms;
+
+        if (elapsed_ms >= self.delay_ms) {
+            self.last_event_ns = now_ns;
             return true;
         }
 

@@ -175,6 +175,38 @@ pub fn generateMargin(generator: *CSSGenerator, parsed: *const class_parser.Pars
 
 /// Generate gap utilities
 pub fn generateGap(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
+    const utility = parsed.utility;
+
+    // Check for gap-x-* and gap-y-* first (these need special handling)
+    if (std.mem.startsWith(u8, utility, "gap-x-")) {
+        const actual_value = utility[6..]; // Skip "gap-x-"
+        const spacing_value = if (actual_value.len > 2 and actual_value[0] == '[' and actual_value[actual_value.len - 1] == ']')
+            actual_value[1 .. actual_value.len - 1] // Strip brackets for arbitrary
+        else
+            spacing_scale.get(actual_value) orelse return;
+
+        var rule = try generator.createRule(parsed);
+        errdefer rule.deinit(generator.allocator);
+        try rule.addDeclaration(generator.allocator, "column-gap", spacing_value);
+        try generator.rules.append(generator.allocator, rule);
+        return;
+    }
+
+    if (std.mem.startsWith(u8, utility, "gap-y-")) {
+        const actual_value = utility[6..]; // Skip "gap-y-"
+        const spacing_value = if (actual_value.len > 2 and actual_value[0] == '[' and actual_value[actual_value.len - 1] == ']')
+            actual_value[1 .. actual_value.len - 1] // Strip brackets for arbitrary
+        else
+            spacing_scale.get(actual_value) orelse return;
+
+        var rule = try generator.createRule(parsed);
+        errdefer rule.deinit(generator.allocator);
+        try rule.addDeclaration(generator.allocator, "row-gap", spacing_value);
+        try generator.rules.append(generator.allocator, rule);
+        return;
+    }
+
+    // Regular gap-*
     if (value == null) return;
 
     // Check for arbitrary value first, then "auto", then spacing scale
@@ -187,32 +219,68 @@ pub fn generateGap(generator: *CSSGenerator, parsed: *const class_parser.ParsedC
 
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
+    try rule.addDeclaration(generator.allocator, "gap", spacing_value);
+    try generator.rules.append(generator.allocator, rule);
+}
 
-    // Extract utility name (before brackets if arbitrary, or before dash for regular)
+/// Generate space-between utilities (space-x-*, space-y-*)
+/// These add margin to all children except the first using > * + *
+pub fn generateSpaceBetween(generator: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
     const utility = parsed.utility;
-    const utility_name = if (parsed.is_arbitrary) blk: {
-        // For "gap-[15px]", extract "gap"
-        if (std.mem.indexOf(u8, utility, "-[")) |idx| {
-            break :blk utility[0..idx];
-        }
-        break :blk utility;
-    } else blk: {
-        // For "gap-4", extract "gap"
-        if (std.mem.indexOf(u8, utility, "-")) |idx| {
-            break :blk utility[0..idx];
-        }
-        break :blk utility;
-    };
 
-    if (std.mem.eql(u8, utility_name, "gap")) {
-        try rule.addDeclaration(generator.allocator, "gap", spacing_value);
-    } else if (std.mem.startsWith(u8, utility_name, "gap-x")) {
-        try rule.addDeclaration(generator.allocator, "column-gap", spacing_value);
-    } else if (std.mem.startsWith(u8, utility_name, "gap-y")) {
-        try rule.addDeclaration(generator.allocator, "row-gap", spacing_value);
+    // Check for space-x-* and space-y-*
+    var is_x = false;
+    var actual_value: []const u8 = undefined;
+
+    if (std.mem.startsWith(u8, utility, "space-x-")) {
+        is_x = true;
+        actual_value = utility[8..]; // Skip "space-x-"
+    } else if (std.mem.startsWith(u8, utility, "space-y-")) {
+        is_x = false;
+        actual_value = utility[8..]; // Skip "space-y-"
+    } else if (value) |v| {
+        // Simple space-x or space-y without value in utility name
+        if (std.mem.eql(u8, utility, "space-x")) {
+            is_x = true;
+            actual_value = v;
+        } else if (std.mem.eql(u8, utility, "space-y")) {
+            is_x = false;
+            actual_value = v;
+        } else {
+            return;
+        }
     } else {
-        rule.deinit(generator.allocator);
         return;
+    }
+
+    // Get spacing value
+    const spacing_value = if (actual_value.len > 2 and actual_value[0] == '[' and actual_value[actual_value.len - 1] == ']')
+        actual_value[1 .. actual_value.len - 1] // Strip brackets for arbitrary
+    else
+        spacing_scale.get(actual_value) orelse return;
+
+    // Create rule with > * + * selector suffix
+    var rule = try generator.createRule(parsed);
+    errdefer rule.deinit(generator.allocator);
+
+    // Note: The actual selector needs to be modified to add > * + *
+    // This is a simplified version that applies to the element itself
+    // Full implementation would require selector modification support
+    if (is_x) {
+        // For horizontal spacing, apply margin-left to all but first child
+        // Simplified: we just use the standard class selector
+        try rule.addDeclaration(generator.allocator, "--tw-space-x-reverse", "0");
+        const margin_right = try std.fmt.allocPrint(generator.allocator, "calc({s} * var(--tw-space-x-reverse))", .{spacing_value});
+        const margin_left = try std.fmt.allocPrint(generator.allocator, "calc({s} * calc(1 - var(--tw-space-x-reverse)))", .{spacing_value});
+        try rule.addDeclarationOwned(generator.allocator, "margin-right", margin_right);
+        try rule.addDeclarationOwned(generator.allocator, "margin-left", margin_left);
+    } else {
+        // For vertical spacing, apply margin-top to all but first child
+        try rule.addDeclaration(generator.allocator, "--tw-space-y-reverse", "0");
+        const margin_bottom = try std.fmt.allocPrint(generator.allocator, "calc({s} * var(--tw-space-y-reverse))", .{spacing_value});
+        const margin_top = try std.fmt.allocPrint(generator.allocator, "calc({s} * calc(1 - var(--tw-space-y-reverse)))", .{spacing_value});
+        try rule.addDeclarationOwned(generator.allocator, "margin-bottom", margin_bottom);
+        try rule.addDeclarationOwned(generator.allocator, "margin-top", margin_top);
     }
 
     try generator.rules.append(generator.allocator, rule);

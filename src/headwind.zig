@@ -21,6 +21,7 @@ pub const ContentExtractor = @import("scanner/content_extractor.zig").ContentExt
 pub const class_parser = @import("parser/class_parser.zig");
 pub const ParsedClass = class_parser.ParsedClass;
 pub const theme_reference = @import("parser/theme_reference.zig");
+pub const grouped_syntax = @import("parser/grouped_syntax.zig");
 
 // Cache
 pub const FileCache = @import("cache/file_cache.zig").FileCache;
@@ -49,6 +50,7 @@ pub const transforms = @import("generator/transforms.zig");
 pub const filters = @import("generator/filters.zig");
 pub const transitions = @import("generator/transitions.zig");
 pub const animations = @import("generator/animations.zig");
+pub const resets = @import("generator/resets.zig");
 
 // Plugin system
 pub const Plugin = @import("plugin/plugin.zig").Plugin;
@@ -96,10 +98,11 @@ pub const Headwind = struct {
 
     /// Build CSS from configuration
     pub fn build(self: *Headwind) ![]const u8 {
-        const start = std.time.nanoTimestamp();
+        var timer = std.time.Timer.start() catch null;
         defer {
-            const end = std.time.nanoTimestamp();
-            self.stats.total_duration_ns = @intCast(end - start);
+            if (timer) |*t| {
+                self.stats.total_duration_ns = @intCast(t.read());
+            }
         }
 
         // Initialize scanner
@@ -109,6 +112,8 @@ pub const Headwind = struct {
             .exclude_patterns = self.config.content.exclude,
             .cache_enabled = self.config.cache.enabled,
             .cache_dir = self.config.cache.dir,
+            .attributify = self.config.attributify,
+            .grouped_syntax = self.config.groupedSyntax,
         };
 
         var scanner = Scanner.init(self.allocator, scan_config);
@@ -167,8 +172,32 @@ pub const Headwind = struct {
         }
         try css.append("\n");
 
-        // Preflight (if enabled)
-        if (self.config.build.preflight) {
+        // CSS Resets (from reset:type classes)
+        const resets_module = @import("generator/resets.zig");
+        var reset_generator = resets_module.ResetGenerator.init(self.allocator);
+        var has_reset = false;
+        for (classes) |class| {
+            if (resets_module.getResetType(class)) |reset_type| {
+                if (try reset_generator.generateReset(reset_type)) |reset_css| {
+                    if (!has_reset) {
+                        try css.append("  /* CSS Reset */\n");
+                        has_reset = true;
+                    }
+                    var reset_lines = std.mem.splitSequence(u8, reset_css, "\n");
+                    while (reset_lines.next()) |line| {
+                        if (line.len > 0) {
+                            try css.append("  ");
+                            try css.append(line);
+                            try css.append("\n");
+                        }
+                    }
+                    try css.append("\n");
+                }
+            }
+        }
+
+        // Preflight (if enabled and no custom reset was specified)
+        if (self.config.build.preflight and !has_reset) {
             const preflight_module = @import("generator/preflight.zig");
             const preflight_css = try preflight_module.generatePreflight(self.allocator);
             // Note: preflight_css is a string literal, no need to free

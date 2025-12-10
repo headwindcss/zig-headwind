@@ -146,6 +146,47 @@ fn isColorValue(value: []const u8) bool {
     return colors.has(value);
 }
 
+/// Check if an arbitrary value looks like a CSS size (has units)
+fn isArbitrarySizeValue(value: ?[]const u8) bool {
+    const val = value orelse return false;
+    if (val.len < 2) return false;
+
+    // Common CSS size units
+    const size_units = [_][]const u8{ "px", "rem", "em", "vh", "vw", "vmin", "vmax", "%", "ch", "ex", "cm", "mm", "in", "pt", "pc", "svh", "svw", "lvh", "lvw", "dvh", "dvw" };
+
+    for (size_units) |unit| {
+        if (std.mem.endsWith(u8, val, unit)) {
+            return true;
+        }
+    }
+
+    // Check for calc() expressions
+    if (std.mem.startsWith(u8, val, "calc(")) return true;
+
+    return false;
+}
+
+/// Check if an arbitrary value looks like a CSS color
+fn isArbitraryColorValue(value: ?[]const u8) bool {
+    const val = value orelse return false;
+
+    // Check for hex colors
+    if (val.len > 0 and val[0] == '#') return true;
+
+    // Check for rgb/rgba/hsl/hsla/oklch patterns
+    if (std.mem.startsWith(u8, val, "rgb")) return true;
+    if (std.mem.startsWith(u8, val, "hsl")) return true;
+    if (std.mem.startsWith(u8, val, "oklch")) return true;
+    if (std.mem.startsWith(u8, val, "hwb")) return true;
+    if (std.mem.startsWith(u8, val, "lab")) return true;
+    if (std.mem.startsWith(u8, val, "lch")) return true;
+    if (std.mem.startsWith(u8, val, "color(")) return true;
+
+    // Check for color names
+    const colors = @import("colors.zig").colors;
+    return colors.has(val);
+}
+
 /// CSS Generator for utility classes
 pub const CSSGenerator = struct {
     allocator: std.mem.Allocator,
@@ -370,10 +411,38 @@ pub const CSSGenerator = struct {
             try self.generateOrderValue(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "p")) {
             try self.generatePadding(parsed, utility_parts.value);
+        } else if (std.mem.startsWith(u8, parsed.utility, "min-w-")) {
+            // min-w-* must come before m-* (margin) - use parsed.utility since parseUtility splits on first dash
+            const min_w_value = parsed.utility[6..]; // Skip "min-w-"
+            try self.generateMinWidth(parsed, min_w_value);
+        } else if (std.mem.startsWith(u8, parsed.utility, "max-w-")) {
+            // max-w-* must come before m-* (margin) - use parsed.utility since parseUtility splits on first dash
+            const max_w_value = parsed.utility[6..]; // Skip "max-w-"
+            try self.generateMaxWidth(parsed, max_w_value);
+        } else if (std.mem.startsWith(u8, parsed.utility, "min-h-")) {
+            // min-h-* must come before m-* (margin) - use parsed.utility since parseUtility splits on first dash
+            const min_h_value = parsed.utility[6..]; // Skip "min-h-"
+            try self.generateMinHeight(parsed, min_h_value);
+        } else if (std.mem.startsWith(u8, parsed.utility, "max-h-")) {
+            // max-h-* must come before m-* (margin) - use parsed.utility since parseUtility splits on first dash
+            const max_h_value = parsed.utility[6..]; // Skip "max-h-"
+            try self.generateMaxHeight(parsed, max_h_value);
         } else if (std.mem.startsWith(u8, utility_name, "m")) {
             try self.generateMargin(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "gap")) {
             try self.generateGap(parsed, utility_parts.value);
+        } else if (std.mem.startsWith(u8, utility_name, "space")) {
+            try self.generateSpaceBetween(parsed, utility_parts.value);
+        } else if (std.mem.startsWith(u8, utility_name, "inset")) {
+            try self.generateInset(parsed, utility_parts.value);
+        } else if (std.mem.startsWith(u8, utility_name, "top") or
+            std.mem.startsWith(u8, utility_name, "right") or
+            std.mem.startsWith(u8, utility_name, "bottom") or
+            std.mem.startsWith(u8, utility_name, "left"))
+        {
+            try self.generatePosition(parsed, utility_name, utility_parts.value);
+        } else if (std.mem.startsWith(u8, utility_name, "ring")) {
+            try self.generateRing(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "whitespace")) {
             try self.generateWhitespace(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "hyphens")) {
@@ -410,8 +479,14 @@ pub const CSSGenerator = struct {
                     // text-color-mix-[in_srgb,_blue_50%,_red]
                     const mix_value = val[10..]; // Skip "color-mix-"
                     try self.generateColorMixText(parsed, mix_value);
-                } else if (parsed.is_arbitrary or isColorValue(val)) {
-                    // text-[rgb(255,0,0)] or text-blue-500
+                } else if (parsed.is_arbitrary and isArbitrarySizeValue(parsed.arbitrary_value)) {
+                    // text-[2rem] - arbitrary font size
+                    try self.generateArbitraryFontSize(parsed);
+                } else if (parsed.is_arbitrary and isArbitraryColorValue(parsed.arbitrary_value)) {
+                    // text-[rgb(255,0,0)] - arbitrary color
+                    try self.generateTextColor(parsed, utility_parts.value);
+                } else if (isColorValue(val)) {
+                    // text-blue-500 - named color
                     try self.generateTextColor(parsed, utility_parts.value);
                 } else {
                     // text-sm, text-left, etc.
@@ -527,9 +602,14 @@ pub const CSSGenerator = struct {
             const collapse_value = if (std.mem.eql(u8, utility_name, "border-separate")) "separate" else "collapse";
             try self.generateBorderCollapse(parsed, collapse_value);
         } else if (std.mem.startsWith(u8, utility_name, "border")) {
-            // Check if it's a border color
+            // Check if it's a border style
             if (utility_parts.value) |val| {
-                if (parsed.is_arbitrary or isColorValue(val)) {
+                if (std.mem.eql(u8, val, "solid") or std.mem.eql(u8, val, "dashed") or
+                    std.mem.eql(u8, val, "dotted") or std.mem.eql(u8, val, "double") or
+                    std.mem.eql(u8, val, "hidden") or std.mem.eql(u8, val, "none"))
+                {
+                    try self.generateBorderStyle(parsed, val);
+                } else if (parsed.is_arbitrary or isColorValue(val)) {
                     // border-[#00ff00] or border-blue-500
                     try self.generateBorderColor(parsed, utility_parts.value);
                 } else {
@@ -542,6 +622,37 @@ pub const CSSGenerator = struct {
         } else if (std.mem.startsWith(u8, utility_name, "outline")) {
             try self.generateOutline(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "rounded")) {
+            // Check for side or corner specific rounded classes
+            // Full utility like "rounded-t-lg" has utility_name="rounded" and value="t-lg"
+            // We need to extract just the size part (e.g., "lg" from "t-lg")
+            if (utility_parts.value) |val| {
+                // Side-specific: rounded-t-lg, rounded-b-none, etc.
+                if (val.len > 2 and val[1] == '-') {
+                    const side = val[0..1];
+                    const size_value = val[2..];
+                    if (std.mem.eql(u8, side, "t") or std.mem.eql(u8, side, "b") or
+                        std.mem.eql(u8, side, "l") or std.mem.eql(u8, side, "r") or
+                        std.mem.eql(u8, side, "s") or std.mem.eql(u8, side, "e"))
+                    {
+                        try self.generateRoundedSide(parsed, side, size_value);
+                        return;
+                    }
+                }
+                // Corner-specific: rounded-tl-xl, rounded-br-sm, etc.
+                if (val.len > 3 and val[2] == '-') {
+                    const corner = val[0..2];
+                    const size_value = val[3..];
+                    if (std.mem.eql(u8, corner, "tl") or std.mem.eql(u8, corner, "tr") or
+                        std.mem.eql(u8, corner, "bl") or std.mem.eql(u8, corner, "br") or
+                        std.mem.eql(u8, corner, "ss") or std.mem.eql(u8, corner, "se") or
+                        std.mem.eql(u8, corner, "es") or std.mem.eql(u8, corner, "ee"))
+                    {
+                        try self.generateRoundedCorner(parsed, corner, size_value);
+                        return;
+                    }
+                }
+            }
+            // Default: just border-radius (rounded, rounded-lg, rounded-full, etc.)
             try self.generateBorderRadius(parsed, utility_parts.value);
         } else if (std.mem.startsWith(u8, utility_name, "from")) {
             try self.generateGradientFrom(parsed, utility_parts.value);
@@ -1083,6 +1194,34 @@ pub const CSSGenerator = struct {
         return sizing.generateHeight(self, parsed, val);
     }
 
+    fn generateMinWidth(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
+        return sizing.generateMinWidth(self, parsed, value);
+    }
+
+    fn generateMaxWidth(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
+        return sizing.generateMaxWidth(self, parsed, value);
+    }
+
+    fn generateMinHeight(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
+        return sizing.generateMinHeight(self, parsed, value);
+    }
+
+    fn generateMaxHeight(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: []const u8) !void {
+        return sizing.generateMaxHeight(self, parsed, value);
+    }
+
+    /// Generate arbitrary font size for text-[2rem] etc.
+    fn generateArbitraryFontSize(self: *CSSGenerator, parsed: *const class_parser.ParsedClass) !void {
+        const arb_value = parsed.arbitrary_value orelse return;
+
+        var rule = try self.createRule(parsed);
+        errdefer rule.deinit(self.allocator);
+
+        try rule.addDeclaration(self.allocator, "font-size", arb_value);
+
+        try self.rules.append(self.allocator, rule);
+    }
+
     fn generateText(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
         const val = value orelse return;
 
@@ -1311,6 +1450,57 @@ pub const CSSGenerator = struct {
 
     fn generateBorderRadius(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
         return borders.generateRounded(self, parsed, value);
+    }
+
+    fn generateBorderStyle(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, style: []const u8) !void {
+        return borders.generateBorderStyle(self, parsed, style);
+    }
+
+    fn generateRoundedSide(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, side: []const u8, value: ?[]const u8) !void {
+        return borders.generateRoundedSide(self, parsed, side, value);
+    }
+
+    fn generateRoundedCorner(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, corner: []const u8, value: ?[]const u8) !void {
+        return borders.generateRoundedCorner(self, parsed, corner, value);
+    }
+
+    fn generateSpaceBetween(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
+        return spacing.generateSpaceBetween(self, parsed, value);
+    }
+
+    fn generateInset(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
+        const utility = parsed.utility;
+        // Determine side from utility name
+        if (std.mem.startsWith(u8, utility, "inset-x-")) {
+            const actual_value = utility[8..];
+            return layout.generateInset(self, parsed, "x", actual_value);
+        } else if (std.mem.startsWith(u8, utility, "inset-y-")) {
+            const actual_value = utility[8..];
+            return layout.generateInset(self, parsed, "y", actual_value);
+        } else if (std.mem.startsWith(u8, utility, "inset-")) {
+            const actual_value = utility[6..];
+            return layout.generateInset(self, parsed, "all", actual_value);
+        }
+        return layout.generateInset(self, parsed, "all", value);
+    }
+
+    fn generatePosition(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, side: []const u8, value: ?[]const u8) !void {
+        const utility = parsed.utility;
+        // Extract value from utility: top-4 → 4
+        if (std.mem.startsWith(u8, utility, "top-")) {
+            return layout.generateInset(self, parsed, "top", utility[4..]);
+        } else if (std.mem.startsWith(u8, utility, "right-")) {
+            return layout.generateInset(self, parsed, "right", utility[6..]);
+        } else if (std.mem.startsWith(u8, utility, "bottom-")) {
+            return layout.generateInset(self, parsed, "bottom", utility[7..]);
+        } else if (std.mem.startsWith(u8, utility, "left-")) {
+            return layout.generateInset(self, parsed, "left", utility[5..]);
+        }
+        return layout.generateInset(self, parsed, side, value);
+    }
+
+    fn generateRing(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {
+        return borders.generateRingWidth(self, parsed, value);
     }
 
     fn generateGradientFrom(self: *CSSGenerator, parsed: *const class_parser.ParsedClass, value: ?[]const u8) !void {

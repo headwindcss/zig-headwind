@@ -35,6 +35,12 @@ pub const HeadwindConfig = struct {
 
     /// Core plugins to disable
     corePlugins: CorePluginsConfig = .{},
+
+    /// Attributify mode configuration (UnoCSS-style)
+    attributify: AttributifyConfig = .{},
+
+    /// Grouped syntax mode (UnunuraCSS-style)
+    groupedSyntax: GroupedSyntaxConfig = .{},
 };
 
 pub const ContentConfig = struct {
@@ -146,6 +152,88 @@ pub const DarkModeStrategy = enum {
     @"class",
     media,
     selector,
+};
+
+/// Attributify mode configuration
+/// Allows using utility classes as HTML attributes
+/// Example: <div flex="~ col" items="center"> instead of class="flex flex-col items-center"
+pub const AttributifyConfig = struct {
+    /// Enable attributify mode
+    enabled: bool = false,
+
+    /// Strict mode - only parse known utility prefixes as attributes
+    /// When false, any attribute with valid utility values will be parsed
+    strict: bool = true,
+
+    /// Prefix for valueless attributes (e.g., prefix="un-" -> <div un-flex>)
+    prefix: []const u8 = "",
+
+    /// List of prefixes to always treat as utilities
+    /// e.g., ["flex", "grid", "p", "m", "bg", "text", "border"]
+    prefixes: []const []const u8 = &.{
+        "flex", "grid", "inline", "block", "hidden",
+        "p", "px", "py", "pt", "pr", "pb", "pl", "ps", "pe",
+        "m", "mx", "my", "mt", "mr", "mb", "ml", "ms", "me",
+        "w", "h", "min", "max", "size",
+        "bg", "text", "font", "leading", "tracking",
+        "border", "rounded", "ring", "outline",
+        "shadow", "opacity", "blur",
+        "gap", "space",
+        "items", "justify", "content", "self", "place",
+        "top", "right", "bottom", "left", "inset",
+        "z", "order",
+        "overflow", "overscroll",
+        "cursor", "select", "pointer",
+        "transition", "duration", "ease", "delay",
+        "animate", "transform", "scale", "rotate", "translate", "skew",
+        "origin",
+        "col", "row",
+        "aspect", "object",
+        "list", "decoration",
+        "underline", "line", "no",
+        "break", "hyphens", "whitespace", "truncate",
+        "sr", "not",
+        "fill", "stroke",
+        "table", "caption",
+        "filter", "backdrop",
+        "mix", "isolation",
+        "accent", "caret", "scroll",
+        "snap", "touch", "resize", "appearance",
+        "columns", "break",
+        "divide",
+    },
+
+    /// Ignore these attributes (never treat as utilities)
+    ignoreAttributes: []const []const u8 = &.{
+        "class", "className", "id", "style", "href", "src", "alt", "title",
+        "type", "name", "value", "placeholder", "data-*", "aria-*",
+        "onclick", "onchange", "onsubmit", "onload", "onerror",
+    },
+};
+
+/// Grouped syntax configuration (UnunuraCSS-style)
+/// Allows grouping utilities with brackets and colon syntax
+/// Example: flex[col jc-center ai-center] or bg:black
+pub const GroupedSyntaxConfig = struct {
+    /// Enable grouped syntax parsing
+    enabled: bool = false,
+
+    /// Enable bracket grouping: prefix[val1 val2 val3]
+    /// e.g., flex[col jc-center ai-center] -> flex-col justify-center items-center
+    brackets: bool = true,
+
+    /// Enable colon shorthand: prefix:value
+    /// e.g., bg:black -> bg-black
+    colonShorthand: bool = true,
+
+    /// Enable reset utilities: reset:type
+    /// e.g., reset:meyer, reset:normalize, reset:tailwind
+    resets: bool = true,
+
+    /// Expansion rules for grouped values
+    /// Maps short forms to full utility names
+    /// Key: prefix, Value: map of short->full
+    expansions: ?std.json.Value = null,
 };
 
 pub const CorePluginsConfig = struct {

@@ -94,6 +94,9 @@ pub fn generateMinWidth(generator: *CSSGenerator, parsed: *const class_parser.Pa
         special
     else if (spacing.spacing_scale.get(value)) |size|
         size
+    else if (value.len > 2 and value[0] == '[' and value[value.len - 1] == ']')
+        // Arbitrary value like "[100%]" - extract the inner value
+        value[1 .. value.len - 1]
     else {
         rule.deinit(generator.allocator);
         return;
@@ -137,7 +140,12 @@ pub fn generateMaxWidth(generator: *CSSGenerator, parsed: *const class_parser.Pa
     var rule = try generator.createRule(parsed);
     errdefer rule.deinit(generator.allocator);
 
-    const max_width_value = max_width_sizes.get(value) orelse {
+    const max_width_value = if (max_width_sizes.get(value)) |size|
+        size
+    else if (value.len > 2 and value[0] == '[' and value[value.len - 1] == ']')
+        // Arbitrary value like "[100%]" - extract the inner value
+        value[1 .. value.len - 1]
+    else {
         rule.deinit(generator.allocator);
         return;
     };
@@ -205,6 +213,9 @@ pub fn generateMinHeight(generator: *CSSGenerator, parsed: *const class_parser.P
         special
     else if (spacing.spacing_scale.get(value)) |size|
         size
+    else if (value.len > 2 and value[0] == '[' and value[value.len - 1] == ']')
+        // Arbitrary value like "[100vh]" - extract the inner value
+        value[1 .. value.len - 1]
     else {
         rule.deinit(generator.allocator);
         return;
@@ -238,6 +249,9 @@ pub fn generateMaxHeight(generator: *CSSGenerator, parsed: *const class_parser.P
         special
     else if (spacing.spacing_scale.get(value)) |size|
         size
+    else if (value.len > 2 and value[0] == '[' and value[value.len - 1] == ']')
+        // Arbitrary value like "[100vh]" - extract the inner value
+        value[1 .. value.len - 1]
     else {
         rule.deinit(generator.allocator);
         return;

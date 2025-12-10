@@ -144,6 +144,17 @@ fn buildCommand(allocator: std.mem.Allocator, opts: CommandOptions) !void {
     };
     defer config_result.deinit(allocator);
 
+    if (opts.verbose) {
+        std.debug.print("\n[verbose] Configuration loaded successfully\n", .{});
+        const files = config_result.value.content.files;
+        std.debug.print("[verbose] Content files configured: {d}\n", .{files.len});
+        for (files) |f| {
+            std.debug.print("[verbose]   - {s}\n", .{f});
+        }
+        std.debug.print("[verbose] Grouped syntax: {s}\n", .{if (config_result.value.groupedSyntax.enabled) "enabled" else "disabled"});
+        std.debug.print("[verbose] Attributify mode: {s}\n", .{if (config_result.value.attributify.enabled) "enabled" else "disabled"});
+    }
+
     // Initialize Headwind
     var hw = try headwind.Headwind.init(allocator, config_result.value);
     defer hw.deinit();
@@ -151,6 +162,16 @@ fn buildCommand(allocator: std.mem.Allocator, opts: CommandOptions) !void {
     // Build (includes scanning and CSS generation)
     const css = try hw.build();
     defer allocator.free(css);
+
+    if (opts.verbose) {
+        std.debug.print("[verbose] CSS generated: {d} bytes\n", .{css.len});
+        // Count CSS rules (approximate by counting opening braces)
+        var rule_count: usize = 0;
+        for (css) |c| {
+            if (c == '{') rule_count += 1;
+        }
+        std.debug.print("[verbose] Approximate CSS rules: {d}\n", .{rule_count});
+    }
 
     // Write output
     const output_path = opts.output_file orelse "dist/output.css";
@@ -230,7 +251,7 @@ fn watchCommand(allocator: std.mem.Allocator, opts: CommandOptions) !void {
 
     // Main loop: check for rebuild triggers
     while (true) {
-        std.Thread.sleep(100 * std.time.ns_per_ms);
+        std.posix.nanosleep(0, 100 * std.time.ns_per_ms);
 
         if (WatchContext.needs_rebuild.load(.seq_cst)) {
             WatchContext.needs_rebuild.store(false, .seq_cst);

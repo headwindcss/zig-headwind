@@ -57,13 +57,15 @@ pub inline fn simdFindVariantSeparators(str: []const u8, allocator: std.mem.Allo
 
     if (str.len == 0) return positions.toOwnedSlice(allocator);
 
-    var bracket_depth: u32 = 0;
+    var bracket_depth: i32 = 0; // Use signed int to handle malformed input
     var i: usize = 0;
 
     while (i < str.len) : (i += 1) {
         switch (str[i]) {
             '[' => bracket_depth += 1,
-            ']' => bracket_depth -= 1,
+            ']' => {
+                if (bracket_depth > 0) bracket_depth -= 1;
+            },
             ':' => {
                 if (bracket_depth == 0) {
                     try positions.append(allocator, i);
@@ -92,33 +94,10 @@ pub inline fn simdIsValidCalcContent(content: []const u8) bool {
     return true;
 }
 
-/// Fast pattern matching for string prefixes using SIMD
+/// Fast pattern matching for string prefixes
 /// Returns true if haystack starts with needle
 pub inline fn simdStartsWith(haystack: []const u8, needle: []const u8) bool {
-    if (needle.len > haystack.len) return false;
-    if (needle.len == 0) return true;
-
-    // For short needles, use standard library
-    if (needle.len < 16) {
-        return std.mem.startsWith(u8, haystack, needle);
-    }
-
-    // SIMD comparison for first 16 bytes
-    if (needle.len >= 16) {
-        const haystack_vec: Vec16x8 = haystack[0..16].*;
-        const needle_vec: Vec16x8 = needle[0..16].*;
-        const matches = haystack_vec == needle_vec;
-
-        if (!@reduce(.And, matches)) return false;
-    }
-
-    // Check remaining bytes
-    var i: usize = 16;
-    while (i < needle.len) : (i += 1) {
-        if (haystack[i] != needle[i]) return false;
-    }
-
-    return true;
+    return std.mem.startsWith(u8, haystack, needle);
 }
 
 // ============================================================================

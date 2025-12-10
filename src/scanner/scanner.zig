@@ -4,6 +4,7 @@ const FileScanner = @import("file_scanner.zig").FileScanner;
 const ContentExtractor = @import("content_extractor.zig").ContentExtractor;
 const FileCache = @import("../cache/file_cache.zig").FileCache;
 const string_utils = @import("../utils/string.zig");
+const config_schema = @import("../config/schema.zig");
 
 /// Main scanner that coordinates file scanning and class extraction
 pub const Scanner = struct {
@@ -23,6 +24,10 @@ pub const Scanner = struct {
         },
         cache_enabled: bool = true,
         cache_dir: []const u8 = ".headwind-cache",
+        /// Attributify mode configuration
+        attributify: config_schema.AttributifyConfig = .{},
+        /// Grouped syntax configuration
+        grouped_syntax: config_schema.GroupedSyntaxConfig = .{},
     };
 
     pub const Stats = struct {
@@ -58,10 +63,11 @@ pub const Scanner = struct {
     /// Scan all files and extract class names
     /// OPTIMIZED: Uses arena allocator for temporary allocations
     pub fn scan(self: *Scanner) ![][]const u8 {
-        const start_time = std.time.milliTimestamp();
+        var timer = std.time.Timer.start() catch null;
         defer {
-            const end_time = std.time.milliTimestamp();
-            self.stats.duration_ms = end_time - start_time;
+            if (timer) |*t| {
+                self.stats.duration_ms = @intCast(t.read() / std.time.ns_per_ms);
+            }
         }
 
         // OPTIMIZATION: Use arena for temporary allocations during scan
@@ -85,7 +91,11 @@ pub const Scanner = struct {
         var all_classes: std.ArrayList([]const u8) = .{};
         try all_classes.ensureTotalCapacity(temp_allocator, files.len * 10); // Estimate ~10 classes per file
 
-        var extractor = ContentExtractor.init(temp_allocator);
+        var extractor = ContentExtractor.initWithConfig(
+            temp_allocator,
+            self.config.attributify,
+            self.config.grouped_syntax,
+        );
 
         for (files) |file_path| {
             const classes = try self.extractWithCache(file_path, &extractor);
