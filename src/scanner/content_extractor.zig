@@ -253,19 +253,35 @@ pub const ContentExtractor = struct {
     fn isKnownVariant(str: []const u8) bool {
         const variants = [_][]const u8{
             // Responsive
-            "sm", "md", "lg", "xl", "2xl",
+            "sm",              "md",              "lg",              "xl",              "2xl",
             // State
-            "hover", "focus", "active", "visited", "disabled", "checked",
-            "first", "last", "odd", "even", "empty",
-            "focus-within", "focus-visible",
+            "hover",           "focus",           "active",          "visited",         "disabled",
+            "enabled",         "checked",         "indeterminate",   "default",         "required",
+            "valid",           "invalid",         "in-range",        "out-of-range",    "placeholder-shown",
+            "autofill",        "read-only",
+            // First/last/odd/even
+            "first",           "last",            "odd",             "even",            "only",
+            "first-of-type",   "last-of-type",    "empty",
+            // Focus
+            "focus-within",    "focus-visible",
             // Dark mode
             "dark",
             // Print
             "print",
             // Motion
-            "motion-safe", "motion-reduce",
+            "motion-safe",     "motion-reduce",
+            // Contrast
+            "contrast-more",   "contrast-less",
+            // Content
+            "before",          "after",           "selection",       "marker",          "file",
+            // RTL/LTR
+            "rtl",             "ltr",
+            // Orientation
+            "portrait",        "landscape",
             // Group/Peer
-            "group-hover", "group-focus", "peer-hover", "peer-focus",
+            "group-hover",     "group-focus",     "peer-hover",      "peer-focus",
+            // Container queries
+            "@sm",             "@md",             "@lg",             "@xl",             "@2xl",
         };
 
         for (variants) |v| {

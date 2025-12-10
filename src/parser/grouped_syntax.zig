@@ -1056,6 +1056,161 @@ pub const GroupedSyntaxParser = struct {
             .{ "1/4", "left-1/4" },
             .{ "3/4", "left-3/4" },
         });
+
+        // Directional padding prefixes (standalone)
+        const px = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "px-0" },
+            .{ "1", "px-1" },
+            .{ "2", "px-2" },
+            .{ "3", "px-3" },
+            .{ "4", "px-4" },
+            .{ "5", "px-5" },
+            .{ "6", "px-6" },
+            .{ "8", "px-8" },
+        });
+
+        const py = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "py-0" },
+            .{ "1", "py-1" },
+            .{ "2", "py-2" },
+            .{ "3", "py-3" },
+            .{ "4", "py-4" },
+            .{ "5", "py-5" },
+            .{ "6", "py-6" },
+            .{ "8", "py-8" },
+        });
+
+        const pt = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "pt-0" },
+            .{ "1", "pt-1" },
+            .{ "2", "pt-2" },
+            .{ "4", "pt-4" },
+            .{ "8", "pt-8" },
+        });
+
+        const pr = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "pr-0" },
+            .{ "1", "pr-1" },
+            .{ "2", "pr-2" },
+            .{ "4", "pr-4" },
+            .{ "8", "pr-8" },
+        });
+
+        const pb = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "pb-0" },
+            .{ "1", "pb-1" },
+            .{ "2", "pb-2" },
+            .{ "4", "pb-4" },
+            .{ "8", "pb-8" },
+        });
+
+        const pl = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "pl-0" },
+            .{ "1", "pl-1" },
+            .{ "2", "pl-2" },
+            .{ "4", "pl-4" },
+            .{ "8", "pl-8" },
+        });
+
+        // Directional margin prefixes (standalone)
+        const mx = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "mx-0" },
+            .{ "auto", "mx-auto" },
+            .{ "1", "mx-1" },
+            .{ "2", "mx-2" },
+            .{ "4", "mx-4" },
+            .{ "8", "mx-8" },
+        });
+
+        const my = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "my-0" },
+            .{ "auto", "my-auto" },
+            .{ "1", "my-1" },
+            .{ "2", "my-2" },
+            .{ "4", "my-4" },
+            .{ "8", "my-8" },
+        });
+
+        const mt = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "mt-0" },
+            .{ "auto", "mt-auto" },
+            .{ "1", "mt-1" },
+            .{ "2", "mt-2" },
+            .{ "4", "mt-4" },
+            .{ "8", "mt-8" },
+        });
+
+        const mr = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "mr-0" },
+            .{ "auto", "mr-auto" },
+            .{ "1", "mr-1" },
+            .{ "2", "mr-2" },
+            .{ "4", "mr-4" },
+            .{ "8", "mr-8" },
+        });
+
+        const mb = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "mb-0" },
+            .{ "auto", "mb-auto" },
+            .{ "1", "mb-1" },
+            .{ "2", "mb-2" },
+            .{ "4", "mb-4" },
+            .{ "8", "mb-8" },
+        });
+
+        const ml = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "ml-0" },
+            .{ "auto", "ml-auto" },
+            .{ "1", "ml-1" },
+            .{ "2", "ml-2" },
+            .{ "4", "ml-4" },
+            .{ "8", "ml-8" },
+        });
+
+        // Underline utilities
+        const underline = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "offset", "underline-offset" },
+            .{ "offset-auto", "underline-offset-auto" },
+            .{ "offset-0", "underline-offset-0" },
+            .{ "offset-1", "underline-offset-1" },
+            .{ "offset-2", "underline-offset-2" },
+            .{ "offset-4", "underline-offset-4" },
+            .{ "offset-8", "underline-offset-8" },
+        });
+
+        // Scroll margin utilities
+        const scroll_m = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "scroll-m-0" },
+            .{ "1", "scroll-m-1" },
+            .{ "2", "scroll-m-2" },
+            .{ "4", "scroll-m-4" },
+            .{ "8", "scroll-m-8" },
+        });
+
+        // Scroll padding utilities
+        const scroll_p = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "scroll-p-0" },
+            .{ "1", "scroll-p-1" },
+            .{ "2", "scroll-p-2" },
+            .{ "4", "scroll-p-4" },
+            .{ "8", "scroll-p-8" },
+        });
+
+        // Screen reader utilities
+        const sr = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "only", "sr-only" },
+            .{ "not", "not-sr-only" },
+        });
+
+        // Hue rotate
+        const hue_rotate = std.StaticStringMap([]const u8).initComptime(.{
+            .{ "0", "hue-rotate-0" },
+            .{ "15", "hue-rotate-15" },
+            .{ "30", "hue-rotate-30" },
+            .{ "60", "hue-rotate-60" },
+            .{ "90", "hue-rotate-90" },
+            .{ "180", "hue-rotate-180" },
+        });
     };
 
     pub fn init(allocator: std.mem.Allocator) GroupedSyntaxParser {
@@ -1065,19 +1220,35 @@ pub const GroupedSyntaxParser = struct {
     /// Known responsive and state variant prefixes
     const variant_prefixes = [_][]const u8{
         // Responsive
-        "sm", "md", "lg", "xl", "2xl",
+        "sm",              "md",              "lg",              "xl",              "2xl",
         // State
-        "hover", "focus", "active", "visited", "disabled", "checked",
-        "first", "last", "odd", "even", "empty",
-        "focus-within", "focus-visible",
+        "hover",           "focus",           "active",          "visited",         "disabled",
+        "enabled",         "checked",         "indeterminate",   "default",         "required",
+        "valid",           "invalid",         "in-range",        "out-of-range",    "placeholder-shown",
+        "autofill",        "read-only",
+        // First/last/odd/even
+        "first",           "last",            "odd",             "even",            "only",
+        "first-of-type",   "last-of-type",    "empty",
+        // Focus
+        "focus-within",    "focus-visible",
         // Dark mode
         "dark",
         // Print
         "print",
         // Motion
-        "motion-safe", "motion-reduce",
+        "motion-safe",     "motion-reduce",
+        // Contrast
+        "contrast-more",   "contrast-less",
+        // Content
+        "before",          "after",           "selection",       "marker",          "file",
+        // RTL/LTR
+        "rtl",             "ltr",
+        // Orientation
+        "portrait",        "landscape",
+        // Group/peer
+        "group-hover",     "group-focus",     "peer-hover",      "peer-focus",
         // Container queries
-        "@sm", "@md", "@lg", "@xl", "@2xl",
+        "@sm",             "@md",             "@lg",             "@xl",             "@2xl",
     };
 
     /// Check if a prefix is a known variant
@@ -1859,6 +2030,91 @@ pub const GroupedSyntaxParser = struct {
                 return try self.allocator.dupe(u8, expanded);
             }
             return try std.fmt.allocPrint(self.allocator, "left-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "px")) {
+            if (ExpansionRules.px.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "px-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "py")) {
+            if (ExpansionRules.py.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "py-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "pt")) {
+            if (ExpansionRules.pt.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "pt-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "pr")) {
+            if (ExpansionRules.pr.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "pr-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "pb")) {
+            if (ExpansionRules.pb.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "pb-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "pl")) {
+            if (ExpansionRules.pl.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "pl-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "mx")) {
+            if (ExpansionRules.mx.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "mx-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "my")) {
+            if (ExpansionRules.my.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "my-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "mt")) {
+            if (ExpansionRules.mt.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "mt-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "mr")) {
+            if (ExpansionRules.mr.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "mr-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "mb")) {
+            if (ExpansionRules.mb.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "mb-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "ml")) {
+            if (ExpansionRules.ml.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "ml-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "underline")) {
+            if (ExpansionRules.underline.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "underline-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "scroll-m")) {
+            if (ExpansionRules.scroll_m.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "scroll-m-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "scroll-p")) {
+            if (ExpansionRules.scroll_p.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "scroll-p-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "sr")) {
+            if (ExpansionRules.sr.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "sr-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "hue-rotate")) {
+            if (ExpansionRules.hue_rotate.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "hue-rotate-{s}", .{value});
         }
 
         // Default: prefix-value
