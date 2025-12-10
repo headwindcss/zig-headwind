@@ -153,6 +153,7 @@ pub const ContentExtractor = struct {
     }
 
     /// Extract utilities from attributify mode attributes
+    /// Supports variant syntax: hw-hover:bg="blue-500" → hover:bg-blue-500
     fn extractAttributifyClasses(
         self: *ContentExtractor,
         attr_name: []const u8,
@@ -164,15 +165,39 @@ pub const ContentExtractor = struct {
             if (std.mem.eql(u8, attr_name, ignored)) return;
             // Handle wildcards like "data-*" and "aria-*"
             if (std.mem.endsWith(u8, ignored, "*")) {
-                const prefix = ignored[0 .. ignored.len - 1];
-                if (std.mem.startsWith(u8, attr_name, prefix)) return;
+                const prefix_str = ignored[0 .. ignored.len - 1];
+                if (std.mem.startsWith(u8, attr_name, prefix_str)) return;
+            }
+        }
+
+        // Check for prefix requirement and extract actual utility name
+        const configured_prefix = self.attributify_config.prefix;
+        var utility_name = attr_name;
+
+        if (configured_prefix.len > 0) {
+            if (!std.mem.startsWith(u8, attr_name, configured_prefix)) return;
+            // Strip the configured prefix (e.g., "hw-" from "hw-flex")
+            utility_name = attr_name[configured_prefix.len..];
+        }
+
+        // Check for variant syntax: hover:bg, md:flex, etc.
+        // Format: [variant:]utility where variant is optional
+        var variant: ?[]const u8 = null;
+        var base_utility = utility_name;
+
+        if (simd.simdIndexOfScalar(utility_name, ':')) |colon_pos| {
+            // Check if the part before colon is a known variant
+            const potential_variant = utility_name[0..colon_pos];
+            if (isKnownVariant(potential_variant)) {
+                variant = potential_variant;
+                base_utility = utility_name[colon_pos + 1 ..];
             }
         }
 
         // Check if attribute name is a known utility prefix
         var is_utility_prefix = false;
         for (self.attributify_config.prefixes) |prefix| {
-            if (std.mem.eql(u8, attr_name, prefix)) {
+            if (std.mem.eql(u8, base_utility, prefix)) {
                 is_utility_prefix = true;
                 break;
             }
@@ -181,16 +206,15 @@ pub const ContentExtractor = struct {
         // In strict mode, only process known prefixes
         if (self.attributify_config.strict and !is_utility_prefix) return;
 
-        // Check for prefix requirement
-        const configured_prefix = self.attributify_config.prefix;
-        if (configured_prefix.len > 0) {
-            if (!std.mem.startsWith(u8, attr_name, configured_prefix)) return;
-        }
-
-        // Handle boolean/valueless attributes: <div flex> → flex
+        // Handle boolean/valueless attributes: <div hw-flex> → flex
         if (attr_value == null or attr_value.?.len == 0) {
-            const class_name = try self.allocator.dupe(u8, attr_name);
-            try classes.append(self.allocator, class_name);
+            if (variant) |v| {
+                const class_name = try std.fmt.allocPrint(self.allocator, "{s}:{s}", .{ v, base_utility });
+                try classes.append(self.allocator, class_name);
+            } else {
+                const class_name = try self.allocator.dupe(u8, base_utility);
+                try classes.append(self.allocator, class_name);
+            }
             return;
         }
 
@@ -204,15 +228,50 @@ pub const ContentExtractor = struct {
             if (trimmed.len == 0) continue;
 
             if (std.mem.eql(u8, trimmed, "~")) {
-                // Just the prefix itself
-                const class_name = try self.allocator.dupe(u8, attr_name);
-                try classes.append(self.allocator, class_name);
+                // Just the utility itself
+                if (variant) |v| {
+                    const class_name = try std.fmt.allocPrint(self.allocator, "{s}:{s}", .{ v, base_utility });
+                    try classes.append(self.allocator, class_name);
+                } else {
+                    const class_name = try self.allocator.dupe(u8, base_utility);
+                    try classes.append(self.allocator, class_name);
+                }
             } else {
-                // Combine prefix with value: attr="value" → attr-value
-                const class_name = try std.fmt.allocPrint(self.allocator, "{s}-{s}", .{ attr_name, trimmed });
-                try classes.append(self.allocator, class_name);
+                // Combine utility with value: attr="value" → [variant:]utility-value
+                if (variant) |v| {
+                    const class_name = try std.fmt.allocPrint(self.allocator, "{s}:{s}-{s}", .{ v, base_utility, trimmed });
+                    try classes.append(self.allocator, class_name);
+                } else {
+                    const class_name = try std.fmt.allocPrint(self.allocator, "{s}-{s}", .{ base_utility, trimmed });
+                    try classes.append(self.allocator, class_name);
+                }
             }
         }
+    }
+
+    /// Check if a string is a known variant prefix
+    fn isKnownVariant(str: []const u8) bool {
+        const variants = [_][]const u8{
+            // Responsive
+            "sm", "md", "lg", "xl", "2xl",
+            // State
+            "hover", "focus", "active", "visited", "disabled", "checked",
+            "first", "last", "odd", "even", "empty",
+            "focus-within", "focus-visible",
+            // Dark mode
+            "dark",
+            // Print
+            "print",
+            // Motion
+            "motion-safe", "motion-reduce",
+            // Group/Peer
+            "group-hover", "group-focus", "peer-hover", "peer-focus",
+        };
+
+        for (variants) |v| {
+            if (std.mem.eql(u8, str, v)) return true;
+        }
+        return false;
     }
 
     /// Process grouped syntax patterns in extracted classes
@@ -579,4 +638,30 @@ test "extractFromHTML with reset utility" {
 
     try std.testing.expectEqual(@as(usize, 1), classes.len);
     try std.testing.expectEqualStrings("reset-meyer", classes[0]);
+}
+
+test "extractFromHTML with attributify variant syntax" {
+    const allocator = std.testing.allocator;
+    var extractor = ContentExtractor.initWithConfig(
+        allocator,
+        .{ .enabled = true, .strict = false, .prefix = "hw-" },
+        .{},
+    );
+
+    const html =
+        \\<div hw-hover:bg="blue-600" hw-md:flex="col">
+        \\</div>
+    ;
+
+    const classes = try extractor.extractFromHTML(html);
+    defer {
+        for (classes) |class| allocator.free(class);
+        allocator.free(classes);
+    }
+
+    // hw-hover:bg="blue-600" → hover:bg-blue-600
+    // hw-md:flex="col" → md:flex-col
+    try std.testing.expectEqual(@as(usize, 2), classes.len);
+    try std.testing.expectEqualStrings("hover:bg-blue-600", classes[0]);
+    try std.testing.expectEqualStrings("md:flex-col", classes[1]);
 }

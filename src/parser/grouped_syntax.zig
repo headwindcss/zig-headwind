@@ -1252,6 +1252,10 @@ pub const GroupedSyntaxParser = struct {
         if (std.mem.eql(u8, prefix, "ring")) {
             return std.mem.eql(u8, value, "offset");
         }
+        // For overflow prefix, x/y are modifiers
+        if (std.mem.eql(u8, prefix, "overflow")) {
+            return std.mem.eql(u8, value, "x") or std.mem.eql(u8, value, "y");
+        }
         return false;
     }
 
@@ -1335,6 +1339,11 @@ pub const GroupedSyntaxParser = struct {
             }
         }
 
+        // For overflow: overflow[x hidden] → overflow-x-hidden
+        if (std.mem.eql(u8, prefix, "overflow")) {
+            return try std.fmt.allocPrint(self.allocator, "overflow-{s}-{s}", .{ modifier, value });
+        }
+
         // Default fallback
         return try std.fmt.allocPrint(self.allocator, "{s}-{s}-{s}", .{ modifier, prefix, value });
     }
@@ -1410,6 +1419,19 @@ pub const GroupedSyntaxParser = struct {
 
     /// Internal expansion without negative/important handling
     fn expandValueInternal(self: *GroupedSyntaxParser, prefix: []const u8, value: []const u8) ![]const u8 {
+        // Check for inner variant: flex[md:col] → md:flex-col
+        if (simd.simdIndexOfScalar(value, ':')) |colon_pos| {
+            const variant = value[0..colon_pos];
+            const inner_value = value[colon_pos + 1 ..];
+
+            // If it looks like a variant prefix, expand without it then prepend
+            if (isVariantPrefix(variant)) {
+                const base_expanded = try self.expandValueInternal(prefix, inner_value);
+                defer self.allocator.free(base_expanded);
+                return try std.fmt.allocPrint(self.allocator, "{s}:{s}", .{ variant, base_expanded });
+            }
+        }
+
         // Try to find expansion rules for this prefix
         if (std.mem.eql(u8, prefix, "flex")) {
             if (ExpansionRules.flex.get(value)) |expanded| {
@@ -1551,6 +1573,292 @@ pub const GroupedSyntaxParser = struct {
                 return try self.allocator.dupe(u8, expanded);
             }
             return try std.fmt.allocPrint(self.allocator, "animate-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "font")) {
+            if (ExpansionRules.font.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "font-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "opacity")) {
+            if (ExpansionRules.opacity.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "opacity-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "z")) {
+            if (ExpansionRules.z.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "z-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "translate")) {
+            if (ExpansionRules.translate.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "translate-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "rotate")) {
+            if (ExpansionRules.rotate.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "rotate-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "scale")) {
+            if (ExpansionRules.scale.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "scale-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "cursor")) {
+            if (ExpansionRules.cursor.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "cursor-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "select")) {
+            if (ExpansionRules.select.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "select-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "overflow")) {
+            if (ExpansionRules.overflow.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "overflow-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "aspect")) {
+            if (ExpansionRules.aspect.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "aspect-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "object")) {
+            if (ExpansionRules.object.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "object-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "items")) {
+            if (ExpansionRules.items.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "items-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "justify")) {
+            if (ExpansionRules.justify.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "justify-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "content")) {
+            if (ExpansionRules.content.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "content-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "self")) {
+            if (ExpansionRules.self.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "self-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "place")) {
+            if (ExpansionRules.place.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "place-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "order")) {
+            if (ExpansionRules.order.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "order-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "tracking")) {
+            if (ExpansionRules.tracking.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "tracking-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "leading")) {
+            if (ExpansionRules.leading.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "leading-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "list")) {
+            if (ExpansionRules.list.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "list-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "decoration")) {
+            if (ExpansionRules.decoration.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "decoration-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "blur")) {
+            if (ExpansionRules.blur.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "blur-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "brightness")) {
+            if (ExpansionRules.brightness.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "brightness-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "contrast")) {
+            if (ExpansionRules.contrast.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "contrast-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "saturate")) {
+            if (ExpansionRules.saturate.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "saturate-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "grayscale")) {
+            if (ExpansionRules.grayscale.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "grayscale-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "sepia")) {
+            if (ExpansionRules.sepia.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "sepia-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "invert")) {
+            if (ExpansionRules.invert.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "invert-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "backdrop")) {
+            if (ExpansionRules.backdrop.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "backdrop-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "origin")) {
+            if (ExpansionRules.origin.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "origin-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "duration")) {
+            if (ExpansionRules.duration.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "duration-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "delay")) {
+            if (ExpansionRules.delay.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "delay-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "ease")) {
+            if (ExpansionRules.ease.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "ease-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "outline")) {
+            if (ExpansionRules.outline.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "outline-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "shadow")) {
+            if (ExpansionRules.shadow.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "shadow-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "pointer")) {
+            if (ExpansionRules.pointer.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "pointer-events-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "resize")) {
+            if (ExpansionRules.resize.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "resize-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "will")) {
+            if (ExpansionRules.will.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "will-change-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "snap")) {
+            if (ExpansionRules.snap.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "snap-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "touch")) {
+            if (ExpansionRules.touch.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "touch-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "fill")) {
+            if (ExpansionRules.fill.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "fill-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "stroke")) {
+            if (ExpansionRules.stroke.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "stroke-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "columns")) {
+            if (ExpansionRules.columns.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "columns-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "break")) {
+            if (ExpansionRules.@"break".get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "break-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "drop-shadow")) {
+            if (ExpansionRules.drop_shadow.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "drop-shadow-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "skew")) {
+            if (ExpansionRules.skew.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "skew-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "accent")) {
+            if (ExpansionRules.accent.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            if (isLikelyColor(value)) {
+                return try std.fmt.allocPrint(self.allocator, "accent-{s}", .{value});
+            }
+            return try std.fmt.allocPrint(self.allocator, "accent-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "caret")) {
+            if (ExpansionRules.caret.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            if (isLikelyColor(value)) {
+                return try std.fmt.allocPrint(self.allocator, "caret-{s}", .{value});
+            }
+            return try std.fmt.allocPrint(self.allocator, "caret-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "appearance")) {
+            if (ExpansionRules.appearance.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "appearance-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "overscroll")) {
+            if (ExpansionRules.overscroll.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "overscroll-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "col")) {
+            if (ExpansionRules.col.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "col-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "row")) {
+            if (ExpansionRules.row.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "row-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "top")) {
+            if (ExpansionRules.top.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "top-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "right")) {
+            if (ExpansionRules.right.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "right-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "bottom")) {
+            if (ExpansionRules.bottom.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "bottom-{s}", .{value});
+        } else if (std.mem.eql(u8, prefix, "left")) {
+            if (ExpansionRules.left.get(value)) |expanded| {
+                return try self.allocator.dupe(u8, expanded);
+            }
+            return try std.fmt.allocPrint(self.allocator, "left-{s}", .{value});
         }
 
         // Default: prefix-value
@@ -1765,4 +2073,162 @@ test "non-grouped syntax returns null" {
     // Variant chains are not colon shorthand
     const result3 = try parser.parseAndExpand("hover:bg-blue-500");
     try std.testing.expect(result3 == null);
+}
+
+test "inner variants: flex[md:col lg:row]" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    const expanded = (try parser.parseAndExpand("flex[md:col lg:row]")).?;
+    defer {
+        for (expanded) |item| allocator.free(item);
+        allocator.free(expanded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 2), expanded.len);
+    try std.testing.expectEqualStrings("md:flex-col", expanded[0]);
+    try std.testing.expectEqualStrings("lg:flex-row", expanded[1]);
+}
+
+test "negative values: m[-4]" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    const expanded = (try parser.parseAndExpand("m[-4]")).?;
+    defer {
+        for (expanded) |item| allocator.free(item);
+        allocator.free(expanded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), expanded.len);
+    try std.testing.expectEqualStrings("-m-4", expanded[0]);
+}
+
+test "important modifier: p[4!]" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    const expanded = (try parser.parseAndExpand("p[4!]")).?;
+    defer {
+        for (expanded) |item| allocator.free(item);
+        allocator.free(expanded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), expanded.len);
+    try std.testing.expectEqualStrings("!p-4", expanded[0]);
+}
+
+test "negative important combined: m[-4!]" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    const expanded = (try parser.parseAndExpand("m[-4!]")).?;
+    defer {
+        for (expanded) |item| allocator.free(item);
+        allocator.free(expanded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), expanded.len);
+    try std.testing.expectEqualStrings("!-m-4", expanded[0]);
+}
+
+test "overflow multiValue: overflow[x hidden]" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    const expanded = (try parser.parseAndExpand("overflow[x hidden]")).?;
+    defer {
+        for (expanded) |item| allocator.free(item);
+        allocator.free(expanded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), expanded.len);
+    try std.testing.expectEqualStrings("overflow-x-hidden", expanded[0]);
+}
+
+test "opacity pass-through: bg[blue-500/50]" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    const expanded = (try parser.parseAndExpand("bg[blue-500/50]")).?;
+    defer {
+        for (expanded) |item| allocator.free(item);
+        allocator.free(expanded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), expanded.len);
+    try std.testing.expectEqualStrings("bg-blue-500/50", expanded[0]);
+}
+
+test "responsive variant prefix: md:flex[col]" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    const expanded = (try parser.parseAndExpand("md:flex[col]")).?;
+    defer {
+        for (expanded) |item| allocator.free(item);
+        allocator.free(expanded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), expanded.len);
+    try std.testing.expectEqualStrings("md:flex-col", expanded[0]);
+}
+
+test "hover variant prefix: hover:bg[blue-600]" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    const expanded = (try parser.parseAndExpand("hover:bg[blue-600]")).?;
+    defer {
+        for (expanded) |item| allocator.free(item);
+        allocator.free(expanded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), expanded.len);
+    try std.testing.expectEqualStrings("hover:bg-blue-600", expanded[0]);
+}
+
+test "new utilities: cursor, select, opacity, z" {
+    const allocator = std.testing.allocator;
+    var parser = GroupedSyntaxParser.init(allocator);
+
+    // cursor
+    {
+        const expanded = (try parser.parseAndExpand("cursor[pointer]")).?;
+        defer {
+            for (expanded) |item| allocator.free(item);
+            allocator.free(expanded);
+        }
+        try std.testing.expectEqualStrings("cursor-pointer", expanded[0]);
+    }
+
+    // select
+    {
+        const expanded = (try parser.parseAndExpand("select[none]")).?;
+        defer {
+            for (expanded) |item| allocator.free(item);
+            allocator.free(expanded);
+        }
+        try std.testing.expectEqualStrings("select-none", expanded[0]);
+    }
+
+    // opacity
+    {
+        const expanded = (try parser.parseAndExpand("opacity[50]")).?;
+        defer {
+            for (expanded) |item| allocator.free(item);
+            allocator.free(expanded);
+        }
+        try std.testing.expectEqualStrings("opacity-50", expanded[0]);
+    }
+
+    // z-index
+    {
+        const expanded = (try parser.parseAndExpand("z[10]")).?;
+        defer {
+            for (expanded) |item| allocator.free(item);
+            allocator.free(expanded);
+        }
+        try std.testing.expectEqualStrings("z-10", expanded[0]);
+    }
 }
