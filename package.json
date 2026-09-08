@@ -1,5 +1,5 @@
 {
-  "name": "zig-crosswind",
+  "name": "zig-css",
   "version": "0.1.1",
   "scripts": {
     "release": "pantry release patch --yes",

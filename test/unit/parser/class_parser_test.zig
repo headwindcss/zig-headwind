@@ -1,7 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
-const crosswind = @import("crosswind");
-const class_parser = crosswind.class_parser;
+const zig_css = @import("zig_css");
+const class_parser = zig_css.class_parser;
 
 // ============================================================================
 // Basic Parsing Tests

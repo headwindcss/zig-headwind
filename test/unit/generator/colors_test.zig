@@ -1,9 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
-const crosswind = @import("crosswind");
+const zig_css = @import("zig_css");
 
-// Import the colors module through crosswind
-const colors = crosswind.colors;
+// Import the colors module through zig-css
+const colors = zig_css.colors;
 
 // ============================================================================
 // OKLCH Color Resolution Tests

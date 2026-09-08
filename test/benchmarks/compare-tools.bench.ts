@@ -1,8 +1,8 @@
 /**
- * Comparative Benchmarks: zig-crosswind vs Competing Tools
+ * Comparative Benchmarks: zig-css vs Competing Tools
  *
  * Tools compared:
- * - zig-crosswind (this project)
+ * - zig-css (this project)
  * - Tailwind CSS v3 (Node.js)
  * - UnoCSS
  *
@@ -92,15 +92,15 @@ writeFileSync('uno.config.ts', UNO_CONFIG);
 
 console.log('🏁 Running comparative benchmarks...\n');
 console.log('Tools being compared:');
-console.log('  - zig-crosswind (Zig native)');
+console.log('  - zig-css (Zig native)');
 console.log('  - Tailwind CSS v3 (Node.js)');
 console.log('  - UnoCSS (Node.js)\n');
 
 const results: Record<string, number> = {};
 
 group('Build Time Comparison', () => {
-  bench('zig-crosswind', () => {
-    execSync('../zig-out/bin/crosswind build temp/test.html -o temp/crosswind-output.css', {
+  bench('zig-css', () => {
+    execSync('../zig-out/bin/zig-css build temp/test.html -o temp/css-output.css', {
       stdio: 'pipe',
     });
   });
@@ -119,11 +119,11 @@ group('Build Time Comparison', () => {
 });
 
 group('Cold Start Performance', () => {
-  bench('zig-crosswind (cold)', () => {
+  bench('zig-css (cold)', () => {
     try {
-      rmSync('temp/crosswind-output.css', { force: true });
+      rmSync('temp/css-output.css', { force: true });
     } catch {}
-    execSync('../zig-out/bin/crosswind build temp/test.html -o temp/crosswind-output.css', {
+    execSync('../zig-out/bin/zig-css build temp/test.html -o temp/css-output.css', {
       stdio: 'pipe',
     });
   });
@@ -164,17 +164,17 @@ console.log('\n📊 Output Size Comparison');
 console.log('================================\n');
 
 try {
-  const crosswindSize = statSync('temp/crosswind-output.css').size;
+  const cssSize = statSync('temp/css-output.css').size;
   const tailwindSize = statSync('temp/tailwind-output.css').size;
   const unoSize = statSync('temp/uno-output.css').size;
 
-  console.log(`zig-crosswind: ${(crosswindSize / 1024).toFixed(2)} KB`);
+  console.log(`zig-css: ${(cssSize / 1024).toFixed(2)} KB`);
   console.log(`Tailwind CSS: ${(tailwindSize / 1024).toFixed(2)} KB`);
   console.log(`UnoCSS:       ${(unoSize / 1024).toFixed(2)} KB\n`);
 
-  const smallest = Math.min(crosswindSize, tailwindSize, unoSize);
+  const smallest = Math.min(cssSize, tailwindSize, unoSize);
   console.log('Winner (smallest):');
-  if (crosswindSize === smallest) console.log('  🏆 zig-crosswind');
+  if (cssSize === smallest) console.log('  🏆 zig-css');
   else if (tailwindSize === smallest) console.log('  🏆 Tailwind CSS');
   else console.log('  🏆 UnoCSS');
 } catch (e) {

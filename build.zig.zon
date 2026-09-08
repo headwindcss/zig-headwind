@@ -1,8 +1,8 @@
 .{
-    .name = .zig_crosswind,
+    .name = .zig_css,
     .version = "0.1.1",
     .minimum_zig_version = "0.17.0-dev.1441+d5181a9c9",
-    .fingerprint = 0xce3a2dd5e3c124f2,
+    .fingerprint = 0xc57cc5ea53e08205,
     .dependencies = .{},
     .paths = .{
         "README.md",

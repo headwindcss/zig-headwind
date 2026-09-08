@@ -1,10 +1,10 @@
 const std = @import("std");
 const testing = std.testing;
-const crosswind = @import("crosswind");
+const zig_css = @import("zig_css");
 
-const layout = crosswind.layout;
-const CSSGenerator = crosswind.CSSGenerator;
-const class_parser = crosswind.class_parser;
+const layout = zig_css.layout;
+const CSSGenerator = zig_css.CSSGenerator;
+const class_parser = zig_css.class_parser;
 
 //============================================================================
 // Display Tests

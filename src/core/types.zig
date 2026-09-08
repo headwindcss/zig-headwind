@@ -1,7 +1,7 @@
 const std = @import("std");
 
-/// Fundamental error set for crosswind
-pub const crosswindError = error{
+/// Fundamental error set for zig-css
+pub const CssError = error{
     // Config errors
     ConfigLoadFailed,
     ConfigInvalid,
@@ -233,7 +233,7 @@ pub const Stats = struct {
     total_duration_ns: i64 = 0,
 
     pub fn report(self: Stats) void {
-        std.debug.print("=== crosswind Stats ===\n", .{});
+        std.debug.print("=== zig-css Stats ===\n", .{});
         std.debug.print("Files scanned: {d}\n", .{self.files_scanned});
         std.debug.print("Classes extracted: {d}\n", .{self.classes_extracted});
         std.debug.print("CSS rules generated: {d}\n", .{self.css_rules_generated});

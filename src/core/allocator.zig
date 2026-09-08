@@ -1,6 +1,6 @@
 const std = @import("std");
 
-/// Centralized allocator management for crosswind
+/// Centralized allocator management for zig-css
 pub const AllocatorManager = struct {
     /// The base allocator (usually GPA)
     base: std.mem.Allocator,

@@ -1,5 +1,5 @@
 const std = @import("std");
-const crosswind = @import("crosswind");
+const zig_css = @import("zig_css");
 const commands = @import("cli/commands.zig");
 
 pub fn main(init: std.process.Init) !void {

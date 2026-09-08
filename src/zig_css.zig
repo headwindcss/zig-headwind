@@ -62,8 +62,8 @@ pub const typographyPlugin = @import("plugin/typography.zig").typographyPlugin;
 pub const formsPlugin = @import("plugin/forms.zig").formsPlugin;
 
 // Re-export commonly used types
-pub const crosswindError = types.crosswindError;
-pub const crosswindConfig = config.crosswindConfig;
+pub const CssError = types.CssError;
+pub const cssConfig = config.cssConfig;
 pub const BuildMode = config.BuildMode;
 pub const ClassName = types.ClassName;
 pub const ScanResult = types.ScanResult;
@@ -74,15 +74,15 @@ pub const version_major = 0;
 pub const version_minor = 1;
 pub const version_patch = 0;
 
-/// Initialize crosswind with configuration
-pub const crosswind = struct {
+/// Initialize zig-css with configuration
+pub const Css = struct {
     allocator: std.mem.Allocator,
     io: std.Io,
-    config: crosswindConfig,
+    config: cssConfig,
     stats: types.Stats,
     scanner: ?Scanner,
 
-    pub fn init(alloc: std.mem.Allocator, io: std.Io, cfg: crosswindConfig) !crosswind {
+    pub fn init(alloc: std.mem.Allocator, io: std.Io, cfg: cssConfig) !Css {
         return .{
             .allocator = alloc,
             .io = io,
@@ -92,14 +92,14 @@ pub const crosswind = struct {
         };
     }
 
-    pub fn deinit(self: *crosswind) void {
+    pub fn deinit(self: *Css) void {
         if (self.scanner) |*scanner| {
             scanner.deinit();
         }
     }
 
     /// Build CSS from configuration
-    pub fn build(self: *crosswind) ![]const u8 {
+    pub fn build(self: *Css) ![]const u8 {
         // 0.17 removed std.time.Timer; monotonic time now comes from the Io
         // instance, which is why the struct carries one.
         const started = std.Io.Timestamp.now(self.io, .awake);
@@ -142,7 +142,7 @@ pub const crosswind = struct {
         defer css.deinit();
 
         // Header
-        try css.append("/* crosswind CSS v");
+        try css.append("/* zig-css CSS v");
         try css.append(version);
         try css.append(" - Generated */\n\n");
 
@@ -315,7 +315,7 @@ pub const crosswind = struct {
     }
 
     /// Get statistics
-    pub fn getStats(self: *const crosswind) types.Stats {
+    pub fn getStats(self: *const Css) types.Stats {
         return self.stats;
     }
 };
@@ -339,7 +339,7 @@ pub fn loadConfigResultWithOptions(
 
 /// Load configuration from default locations
 /// DEPRECATED: Use loadConfigResult() instead
-pub fn loadConfig(alloc: std.mem.Allocator) !crosswindConfig {
+pub fn loadConfig(alloc: std.mem.Allocator) !cssConfig {
     return config_loader.loadConfig(alloc, .{});
 }
 
@@ -348,7 +348,7 @@ pub fn loadConfig(alloc: std.mem.Allocator) !crosswindConfig {
 pub fn loadConfigWithOptions(
     alloc: std.mem.Allocator,
     options: config_loader.LoadOptions,
-) !crosswindConfig {
+) !cssConfig {
     return config_loader.loadConfig(alloc, options);
 }
 
@@ -356,18 +356,18 @@ test "version" {
     try std.testing.expectEqualStrings("0.1.0", version);
 }
 
-test "crosswind init" {
+test "zig-css init" {
     const cfg = config.defaultConfig();
-    var hw = try crosswind.init(std.testing.allocator, std.testing.io, cfg);
+    var hw = try Css.init(std.testing.allocator, std.testing.io, cfg);
     defer hw.deinit();
 
     const stats = hw.getStats();
     try std.testing.expectEqual(@as(usize, 0), stats.files_scanned);
 }
 
-test "crosswind build" {
+test "zig-css build" {
     const cfg = config.defaultConfig();
-    var hw = try crosswind.init(std.testing.allocator, std.testing.io, cfg);
+    var hw = try Css.init(std.testing.allocator, std.testing.io, cfg);
     defer hw.deinit();
 
     const css = try hw.build();

@@ -37,7 +37,7 @@ function createTestHTML(classes: string): string {
 group('Generator - Color Utilities', () => {
   bench('Generate color CSS', () => {
     writeFileSync('temp/colors.html', createTestHTML(utilities.colors));
-    execSync('../zig-out/bin/crosswind build temp/colors.html -o temp/colors.css', {
+    execSync('../zig-out/bin/zig-css build temp/colors.html -o temp/colors.css', {
       stdio: 'pipe',
     });
   });
@@ -46,7 +46,7 @@ group('Generator - Color Utilities', () => {
 group('Generator - Typography Utilities', () => {
   bench('Generate typography CSS', () => {
     writeFileSync('temp/typography.html', createTestHTML(utilities.typography));
-    execSync('../zig-out/bin/crosswind build temp/typography.html -o temp/typography.css', {
+    execSync('../zig-out/bin/zig-css build temp/typography.html -o temp/typography.css', {
       stdio: 'pipe',
     });
   });
@@ -55,7 +55,7 @@ group('Generator - Typography Utilities', () => {
 group('Generator - Spacing Utilities', () => {
   bench('Generate spacing CSS', () => {
     writeFileSync('temp/spacing.html', createTestHTML(utilities.spacing));
-    execSync('../zig-out/bin/crosswind build temp/spacing.html -o temp/spacing.css', {
+    execSync('../zig-out/bin/zig-css build temp/spacing.html -o temp/spacing.css', {
       stdio: 'pipe',
     });
   });
@@ -64,7 +64,7 @@ group('Generator - Spacing Utilities', () => {
 group('Generator - Sizing Utilities', () => {
   bench('Generate sizing CSS', () => {
     writeFileSync('temp/sizing.html', createTestHTML(utilities.sizing));
-    execSync('../zig-out/bin/crosswind build temp/sizing.html -o temp/sizing.css', {
+    execSync('../zig-out/bin/zig-css build temp/sizing.html -o temp/sizing.css', {
       stdio: 'pipe',
     });
   });
@@ -73,7 +73,7 @@ group('Generator - Sizing Utilities', () => {
 group('Generator - Layout Utilities', () => {
   bench('Generate layout CSS (flexbox + grid)', () => {
     writeFileSync('temp/layout.html', createTestHTML(utilities.layout));
-    execSync('../zig-out/bin/crosswind build temp/layout.html -o temp/layout.css', {
+    execSync('../zig-out/bin/zig-css build temp/layout.html -o temp/layout.css', {
       stdio: 'pipe',
     });
   });
@@ -82,7 +82,7 @@ group('Generator - Layout Utilities', () => {
 group('Generator - Border Utilities', () => {
   bench('Generate border CSS', () => {
     writeFileSync('temp/borders.html', createTestHTML(utilities.borders));
-    execSync('../zig-out/bin/crosswind build temp/borders.html -o temp/borders.css', {
+    execSync('../zig-out/bin/zig-css build temp/borders.html -o temp/borders.css', {
       stdio: 'pipe',
     });
   });
@@ -91,7 +91,7 @@ group('Generator - Border Utilities', () => {
 group('Generator - Effects & Filters', () => {
   bench('Generate effects CSS', () => {
     writeFileSync('temp/effects.html', createTestHTML(utilities.effects));
-    execSync('../zig-out/bin/crosswind build temp/effects.html -o temp/effects.css', {
+    execSync('../zig-out/bin/zig-css build temp/effects.html -o temp/effects.css', {
       stdio: 'pipe',
     });
   });
@@ -100,7 +100,7 @@ group('Generator - Effects & Filters', () => {
 group('Generator - Transforms', () => {
   bench('Generate transform CSS', () => {
     writeFileSync('temp/transforms.html', createTestHTML(utilities.transforms));
-    execSync('../zig-out/bin/crosswind build temp/transforms.html -o temp/transforms.css', {
+    execSync('../zig-out/bin/zig-css build temp/transforms.html -o temp/transforms.css', {
       stdio: 'pipe',
     });
   });
@@ -109,7 +109,7 @@ group('Generator - Transforms', () => {
 group('Generator - Transitions & Animations', () => {
   bench('Generate transition CSS', () => {
     writeFileSync('temp/transitions.html', createTestHTML(utilities.transitions));
-    execSync('../zig-out/bin/crosswind build temp/transitions.html -o temp/transitions.css', {
+    execSync('../zig-out/bin/zig-css build temp/transitions.html -o temp/transitions.css', {
       stdio: 'pipe',
     });
   });
@@ -118,7 +118,7 @@ group('Generator - Transitions & Animations', () => {
 group('Generator - Responsive Variants', () => {
   bench('Generate responsive CSS', () => {
     writeFileSync('temp/responsive.html', createTestHTML(utilities.responsive));
-    execSync('../zig-out/bin/crosswind build temp/responsive.html -o temp/responsive.css', {
+    execSync('../zig-out/bin/zig-css build temp/responsive.html -o temp/responsive.css', {
       stdio: 'pipe',
     });
   });
@@ -127,7 +127,7 @@ group('Generator - Responsive Variants', () => {
 group('Generator - Dark Mode', () => {
   bench('Generate dark mode CSS', () => {
     writeFileSync('temp/darkmode.html', createTestHTML(utilities.darkMode));
-    execSync('../zig-out/bin/crosswind build temp/darkmode.html -o temp/darkmode.css', {
+    execSync('../zig-out/bin/zig-css build temp/darkmode.html -o temp/darkmode.css', {
       stdio: 'pipe',
     });
   });
@@ -136,7 +136,7 @@ group('Generator - Dark Mode', () => {
 group('Generator - Complete Build', () => {
   bench('Generate complete CSS (all utilities)', () => {
     writeFileSync('temp/all.html', createTestHTML(utilities.all));
-    execSync('../zig-out/bin/crosswind build temp/all.html -o temp/all.css', {
+    execSync('../zig-out/bin/zig-css build temp/all.html -o temp/all.css', {
       stdio: 'pipe',
     });
   });

@@ -1,9 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
-const crosswind = @import("crosswind");
+const zig_css = @import("zig_css");
 
-const class_parser = crosswind.class_parser;
-const CSSGenerator = crosswind.CSSGenerator;
+const class_parser = zig_css.class_parser;
+const CSSGenerator = zig_css.CSSGenerator;
 
 // ============================================================================
 // Integration Tests: Parser + Generator
@@ -19,7 +19,7 @@ test "parse and generate simple utility" {
     defer generator.deinit();
 
     // Generate CSS from parsed class
-    try crosswind.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
+    try zig_css.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
 
     const css = try generator.generate();
     defer allocator.free(css);
@@ -40,7 +40,7 @@ test "parse and generate with variant" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    try crosswind.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
+    try zig_css.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
 
     const css = try generator.generate();
     defer allocator.free(css);
@@ -60,7 +60,7 @@ test "parse and generate with multiple variants" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    try crosswind.typography.generateTextColor(&generator, &parsed, "white");
+    try zig_css.typography.generateTextColor(&generator, &parsed, "white");
 
     const css = try generator.generate();
     defer allocator.free(css);
@@ -79,7 +79,7 @@ test "parse and generate with important modifier" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    try crosswind.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
+    try zig_css.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
 
     const css = try generator.generate();
     defer allocator.free(css);
@@ -99,7 +99,7 @@ test "parse and generate arbitrary value" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    try crosswind.sizing.generateWidth(&generator, &parsed, "200px");
+    try zig_css.sizing.generateWidth(&generator, &parsed, "200px");
 
     const css = try generator.generate();
     defer allocator.free(css);
@@ -147,7 +147,7 @@ test "deduplication of identical rules" {
         var parsed = try class_parser.parseClass(allocator, "bg-blue-500");
         defer parsed.deinit(allocator);
 
-        try crosswind.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
+        try zig_css.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
     }
 
     const css = try generator.generate();

@@ -1,8 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
-const crosswind = @import("crosswind");
-const CSSGenerator = crosswind.CSSGenerator;
-const class_parser = crosswind.class_parser;
+const zig_css = @import("zig_css");
+const CSSGenerator = zig_css.CSSGenerator;
+const class_parser = zig_css.class_parser;
 
 // ============================================================================
 // Font Family Tests

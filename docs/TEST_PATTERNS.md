@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the testing patterns, best practices, and conventions used in the zig-crosswind test suite.
+This document describes the testing patterns, best practices, and conventions used in the zig-css test suite.
 
 ---
 
@@ -399,7 +399,7 @@ test "integration: parse and generate simple utility" {
     var generator = CSSGenerator.init(allocator);
     defer generator.deinit();
 
-    try crosswind.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
+    try zig_css.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
 
     // 3. Verify complete workflow
     const css = try generator.generate();
@@ -575,11 +575,11 @@ test "parser handles 100 levels of variant nesting" {
 ```zig
 const std = @import("std");
 const testing = std.testing;
-const crosswind = @import("crosswind");
+const zig_css = @import("zig_css");
 
-const module = crosswind.module_name;
-const CSSGenerator = crosswind.CSSGenerator;
-const class_parser = crosswind.class_parser;
+const module = zig_css.module_name;
+const CSSGenerator = zig_css.CSSGenerator;
+const class_parser = zig_css.class_parser;
 
 // ============================================================================
 // Feature Group 1
@@ -622,11 +622,11 @@ import { execSync } from 'child_process';
 
 group('Feature Name', () => {
   bench('Benchmark case 1', () => {
-    execSync('../zig-out/bin/crosswind ...', { stdio: 'pipe' });
+    execSync('../zig-out/bin/zig-css ...', { stdio: 'pipe' });
   });
 
   bench('Benchmark case 2', () => {
-    execSync('../zig-out/bin/crosswind ...', { stdio: 'pipe' });
+    execSync('../zig-out/bin/zig-css ...', { stdio: 'pipe' });
   });
 });
 

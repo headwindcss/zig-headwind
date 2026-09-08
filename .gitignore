@@ -27,4 +27,7 @@ coverage/
 
 # Cache
 .cache/
-/.crosswind-cache
+/.zig-css-cache
+
+# Toolchain installed by `pantry install`
+pantry

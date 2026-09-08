@@ -171,19 +171,19 @@ writeFileSync('temp/src/large.html', largeProject);
 
 group('Full Build - Project Size', () => {
   bench('Small project (1 file, ~10 classes)', () => {
-    execSync('../zig-out/bin/crosswind build temp/src/small.html -o temp/small.css', {
+    execSync('../zig-out/bin/zig-css build temp/src/small.html -o temp/small.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Medium project (1 file, ~100 classes)', () => {
-    execSync('../zig-out/bin/crosswind build temp/src/medium.html -o temp/medium.css', {
+    execSync('../zig-out/bin/zig-css build temp/src/medium.html -o temp/medium.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Large project (1 file, ~500 classes)', () => {
-    execSync('../zig-out/bin/crosswind build temp/src/large.html -o temp/large.css', {
+    execSync('../zig-out/bin/zig-css build temp/src/large.html -o temp/large.css', {
       stdio: 'pipe',
     });
   });
@@ -191,13 +191,13 @@ group('Full Build - Project Size', () => {
 
 group('Full Build - Optimization Levels', () => {
   bench('Development build (no minification)', () => {
-    execSync('../zig-out/bin/crosswind build temp/src/medium.html -o temp/dev.css', {
+    execSync('../zig-out/bin/zig-css build temp/src/medium.html -o temp/dev.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Production build (minified)', () => {
-    execSync('../zig-out/bin/crosswind build temp/src/medium.html -o temp/prod.css --minify', {
+    execSync('../zig-out/bin/zig-css build temp/src/medium.html -o temp/prod.css --minify', {
       stdio: 'pipe',
     });
   });
@@ -205,18 +205,18 @@ group('Full Build - Optimization Levels', () => {
 
 group('Full Build - Cache Performance', () => {
   bench('Cold build (no cache)', () => {
-    execSync('../zig-out/bin/crosswind build temp/src/medium.html -o temp/output.css --no-cache', {
+    execSync('../zig-out/bin/zig-css build temp/src/medium.html -o temp/output.css --no-cache', {
       stdio: 'pipe',
     });
   });
 
   bench('Warm build (with cache)', () => {
     // First build to populate cache
-    execSync('../zig-out/bin/crosswind build temp/src/medium.html -o temp/output.css', {
+    execSync('../zig-out/bin/zig-css build temp/src/medium.html -o temp/output.css', {
       stdio: 'pipe',
     });
     // Second build (measured)
-    execSync('../zig-out/bin/crosswind build temp/src/medium.html -o temp/output.css', {
+    execSync('../zig-out/bin/zig-css build temp/src/medium.html -o temp/output.css', {
       stdio: 'pipe',
     });
   });
@@ -226,7 +226,7 @@ group('Full Build - Watch Mode Simulation', () => {
   bench('Incremental rebuild', () => {
     // Simulate file change
     writeFileSync('temp/src/medium.html', mediumProject + '\n<!-- changed -->');
-    execSync('../zig-out/bin/crosswind build temp/src/medium.html -o temp/output.css --incremental', {
+    execSync('../zig-out/bin/zig-css build temp/src/medium.html -o temp/output.css --incremental', {
       stdio: 'pipe',
     });
   });

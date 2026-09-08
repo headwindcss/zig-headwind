@@ -1,9 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
-const crosswind = @import("crosswind");
+const zig_css = @import("zig_css");
 
-const class_parser = crosswind.class_parser;
-const CSSGenerator = crosswind.CSSGenerator;
+const class_parser = zig_css.class_parser;
+const CSSGenerator = zig_css.CSSGenerator;
 
 // ============================================================================
 // COMPREHENSIVE EDGE CASE TESTING
@@ -557,7 +557,7 @@ test "edge case: generate with duplicate classes" {
         var parsed = try class_parser.parseClass(allocator, "bg-blue-500");
         defer parsed.deinit(allocator);
 
-        try crosswind.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
+        try zig_css.backgrounds.generateBgColor(&generator, &parsed, "blue-500");
     }
 
     const css = try generator.generate();
@@ -587,7 +587,7 @@ test "edge case: conflicting utilities" {
         defer parsed.deinit(allocator);
 
         const value = class[3..]; // Strip "bg-"
-        try crosswind.backgrounds.generateBgColor(&generator, &parsed, value);
+        try zig_css.backgrounds.generateBgColor(&generator, &parsed, value);
     }
 
     const css = try generator.generate();

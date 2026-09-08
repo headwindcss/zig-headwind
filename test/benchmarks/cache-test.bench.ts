@@ -33,14 +33,14 @@ console.log('🧪 Testing cache performance...\n');
 
 // First, do a single build to populate cache
 console.log('Populating cache with initial build...');
-execSync('../zig-out/bin/crosswind build temp/cache-test.html -o temp/cache-test.css', {
+execSync('../zig-out/bin/zig-css build temp/cache-test.html -o temp/cache-test.css', {
   stdio: 'pipe',
 });
 console.log('Cache populated.\n');
 
 group('Cache Performance Test', () => {
   bench('Build (cache should be warm)', () => {
-    execSync('../zig-out/bin/crosswind build temp/cache-test.html -o temp/cache-test-out.css', {
+    execSync('../zig-out/bin/zig-css build temp/cache-test.html -o temp/cache-test-out.css', {
       stdio: 'pipe',
     });
   });

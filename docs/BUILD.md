@@ -1,6 +1,6 @@
-# crosswind Build System
+# zig-css Build System
 
-This document describes the comprehensive build system for crosswind, including cross-compilation, release optimizations, and distribution builds.
+This document describes the comprehensive build system for zig-css, including cross-compilation, release optimizations, and distribution builds.
 
 ## Quick Start
 
@@ -108,18 +108,18 @@ All release and cross-compilation builds automatically strip debug symbols to re
 ```
 zig-out/
 ├── bin/                    # Default build output
-│   └── crosswind           # Main executable
+│   └── zig-css           # Main executable
 └── dist/                  # Cross-compilation output
     ├── linux-x86_64/
-    │   └── crosswind       # Linux x86_64 binary (static)
+    │   └── zig-css       # Linux x86_64 binary (static)
     ├── linux-aarch64/
-    │   └── crosswind       # Linux ARM64 binary (static)
+    │   └── zig-css       # Linux ARM64 binary (static)
     ├── macos-x86_64/
-    │   └── crosswind       # macOS Intel binary
+    │   └── zig-css       # macOS Intel binary
     ├── macos-arm64/
-    │   └── crosswind       # macOS Apple Silicon binary
+    │   └── zig-css       # macOS Apple Silicon binary
     └── windows-x86_64/
-        └── crosswind.exe   # Windows binary (static)
+        └── zig_css.exe   # Windows binary (static)
 ```
 
 ### Binary Sizes
@@ -180,7 +180,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: crosswind-binaries
+          name: zig-css-binaries
           path: zig-out/dist/
 ```
 

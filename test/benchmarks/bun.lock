@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "zig-crosswind-benchmarks",
+      "name": "zig-css-benchmarks",
       "dependencies": {
         "@unocss/core": "^66.5.4",
         "lightningcss": "^1.30.2",

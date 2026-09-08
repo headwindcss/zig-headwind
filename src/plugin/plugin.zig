@@ -1,8 +1,8 @@
 const std = @import("std");
-const crosswindConfig = @import("../config/schema.zig").crosswindConfig;
+const cssConfig = @import("../config/schema.zig").cssConfig;
 const CSSGenerator = @import("../generator/css_generator.zig").CSSGenerator;
 
-/// Plugin interface for extending crosswind
+/// Plugin interface for extending zig-css
 pub const Plugin = struct {
     name: []const u8,
     init_fn: *const fn (*PluginContext) anyerror!void,
@@ -25,16 +25,16 @@ pub const Plugin = struct {
     }
 };
 
-/// Plugin context provides APIs for plugins to extend crosswind
+/// Plugin context provides APIs for plugins to extend zig-css
 pub const PluginContext = struct {
     allocator: std.mem.Allocator,
-    config: *const crosswindConfig,
+    config: *const cssConfig,
     base_styles: std.ArrayList(CustomStyle),
     component_styles: std.ArrayList(CustomStyle),
     utility_styles: std.ArrayList(CustomStyle),
     custom_variants: std.StringHashMap(VariantDefinition),
 
-    pub fn init(allocator: std.mem.Allocator, config: *const crosswindConfig) PluginContext {
+    pub fn init(allocator: std.mem.Allocator, config: *const cssConfig) PluginContext {
         return .{
             .allocator = allocator,
             .config = config,

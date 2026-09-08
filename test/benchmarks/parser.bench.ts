@@ -30,7 +30,7 @@ function createTestHTML(classes: string): string {
 group('Parser - Simple Classes', () => {
   bench('Parse simple utilities', () => {
     writeFileSync('temp/simple.html', createTestHTML(testCases.simple));
-    execSync('../zig-out/bin/crosswind build temp/simple.html -o temp/simple.css', {
+    execSync('../zig-out/bin/zig-css build temp/simple.html -o temp/simple.css', {
       stdio: 'pipe',
     });
   });
@@ -39,21 +39,21 @@ group('Parser - Simple Classes', () => {
 group('Parser - Variants', () => {
   bench('Parse single variants', () => {
     writeFileSync('temp/variants.html', createTestHTML(testCases.withVariants));
-    execSync('../zig-out/bin/crosswind build temp/variants.html -o temp/variants.css', {
+    execSync('../zig-out/bin/zig-css build temp/variants.html -o temp/variants.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Parse multiple variants', () => {
     writeFileSync('temp/multi-variants.html', createTestHTML(testCases.multipleVariants));
-    execSync('../zig-out/bin/crosswind build temp/multi-variants.html -o temp/multi-variants.css', {
+    execSync('../zig-out/bin/zig-css build temp/multi-variants.html -o temp/multi-variants.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Parse complex variants', () => {
     writeFileSync('temp/complex.html', createTestHTML(testCases.complex));
-    execSync('../zig-out/bin/crosswind build temp/complex.html -o temp/complex.css', {
+    execSync('../zig-out/bin/zig-css build temp/complex.html -o temp/complex.css', {
       stdio: 'pipe',
     });
   });
@@ -62,7 +62,7 @@ group('Parser - Variants', () => {
 group('Parser - Arbitrary Values', () => {
   bench('Parse arbitrary values', () => {
     writeFileSync('temp/arbitrary.html', createTestHTML(testCases.arbitraryValues));
-    execSync('../zig-out/bin/crosswind build temp/arbitrary.html -o temp/arbitrary.css', {
+    execSync('../zig-out/bin/zig-css build temp/arbitrary.html -o temp/arbitrary.css', {
       stdio: 'pipe',
     });
   });
@@ -71,14 +71,14 @@ group('Parser - Arbitrary Values', () => {
 group('Parser - Special Cases', () => {
   bench('Parse important modifier', () => {
     writeFileSync('temp/important.html', createTestHTML(testCases.important));
-    execSync('../zig-out/bin/crosswind build temp/important.html -o temp/important.css', {
+    execSync('../zig-out/bin/zig-css build temp/important.html -o temp/important.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Parse negative values', () => {
     writeFileSync('temp/negative.html', createTestHTML(testCases.negative));
-    execSync('../zig-out/bin/crosswind build temp/negative.html -o temp/negative.css', {
+    execSync('../zig-out/bin/zig-css build temp/negative.html -o temp/negative.css', {
       stdio: 'pipe',
     });
   });
@@ -87,14 +87,14 @@ group('Parser - Special Cases', () => {
 group('Parser - Scale Testing', () => {
   bench('Parse 100 classes', () => {
     writeFileSync('temp/long.html', createTestHTML(testCases.long));
-    execSync('../zig-out/bin/crosswind build temp/long.html -o temp/long.css', {
+    execSync('../zig-out/bin/zig-css build temp/long.html -o temp/long.css', {
       stdio: 'pipe',
     });
   });
 
   bench('Parse 1000 classes', () => {
     writeFileSync('temp/very-long.html', createTestHTML(testCases.veryLong));
-    execSync('../zig-out/bin/crosswind build temp/very-long.html -o temp/very-long.css', {
+    execSync('../zig-out/bin/zig-css build temp/very-long.html -o temp/very-long.css', {
       stdio: 'pipe',
     });
   });

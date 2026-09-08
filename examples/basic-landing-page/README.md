@@ -1,6 +1,6 @@
 # Basic Landing Page Example
 
-A simple landing page showcasing Zig crosswind's capabilities.
+A simple landing page showcasing Zig zig-css's capabilities.
 
 ## Features Demonstrated
 
@@ -19,10 +19,10 @@ From the repository root:
 
 ```bash
 # Build the CSS
-./zig-out/bin/crosswind build examples/basic-landing-page/index.html -o examples/basic-landing-page/styles.css
+./zig-out/bin/zig-css build examples/basic-landing-page/index.html -o examples/basic-landing-page/styles.css
 
 # Watch for changes
-./zig-out/bin/crosswind watch examples/basic-landing-page/index.html -o examples/basic-landing-page/styles.css
+./zig-out/bin/zig-css watch examples/basic-landing-page/index.html -o examples/basic-landing-page/styles.css
 ```
 
 ## Usage

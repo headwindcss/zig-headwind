@@ -1,12 +1,12 @@
 const std = @import("std");
-const crosswind = @import("crosswind");
+const zig_css = @import("zig_css");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    std.debug.print("=== crosswind Benchmarks ===\n\n", .{});
+    std.debug.print("=== zig-css Benchmarks ===\n\n", .{});
 
     try benchmarkStringHashing(allocator);
     try benchmarkStringBuilder(allocator);
@@ -22,7 +22,7 @@ fn benchmarkStringHashing(allocator: std.mem.Allocator) !void {
     const start = std.time.nanoTimestamp();
     var i: usize = 0;
     while (i < iterations) : (i += 1) {
-        _ = crosswind.string.hashString(test_string);
+        _ = zig_css.string.hashString(test_string);
     }
     const end = std.time.nanoTimestamp();
 
@@ -43,7 +43,7 @@ fn benchmarkStringBuilder(allocator: std.mem.Allocator) !void {
     const start = std.time.nanoTimestamp();
     var i: usize = 0;
     while (i < iterations) : (i += 1) {
-        var sb = crosswind.string.StringBuilder.init(allocator);
+        var sb = zig_css.string.StringBuilder.init(allocator);
         defer sb.deinit();
 
         try sb.append("hover:");
@@ -67,7 +67,7 @@ fn benchmarkStringBuilder(allocator: std.mem.Allocator) !void {
 fn benchmarkStringPool(allocator: std.mem.Allocator) !void {
     const iterations = 100_000;
 
-    var pool = crosswind.allocator.StringPool.init(allocator);
+    var pool = zig_css.allocator.StringPool.init(allocator);
     defer pool.deinit();
 
     const start = std.time.nanoTimestamp();

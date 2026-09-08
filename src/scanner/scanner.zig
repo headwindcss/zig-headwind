@@ -24,7 +24,7 @@ pub const Scanner = struct {
             "build/**",
         },
         cache_enabled: bool = true,
-        cache_dir: []const u8 = ".crosswind-cache",
+        cache_dir: []const u8 = ".zig-css-cache",
         /// Attributify mode configuration
         attributify: config_schema.AttributifyConfig = .{},
         /// Grouped syntax configuration

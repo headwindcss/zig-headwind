@@ -1,10 +1,10 @@
 const std = @import("std");
 
-/// crosswind configuration schema
+/// zig-css configuration schema
 /// This uses zig-config for loading and merging configuration
-pub const crosswindConfig = struct {
+pub const cssConfig = struct {
     /// Project name
-    name: []const u8 = "crosswind",
+    name: []const u8 = "zig-css",
 
     /// Content paths to scan for class names
     content: ContentConfig = .{},
@@ -98,7 +98,7 @@ pub const ThemeConfig = struct {
 
 pub const BuildConfig = struct {
     /// Output file path
-    output: []const u8 = "dist/crosswind.css",
+    output: []const u8 = "dist/zig_css.css",
 
     /// Minify output
     minify: bool = false,
@@ -134,7 +134,7 @@ pub const CacheConfig = struct {
     enabled: bool = true,
 
     /// Cache directory
-    dir: []const u8 = ".crosswind-cache",
+    dir: []const u8 = ".zig-css-cache",
 
     /// Cache TTL in milliseconds
     ttl: u32 = 3600000, // 1 hour
@@ -275,12 +275,12 @@ pub const CorePluginsConfig = struct {
 };
 
 /// Default configuration
-pub fn defaultConfig() crosswindConfig {
+pub fn defaultConfig() cssConfig {
     return .{};
 }
 
 /// Validate configuration
-pub fn validate(config: *const crosswindConfig) !void {
+pub fn validate(config: *const cssConfig) !void {
     if (config.content.files.len == 0) {
         return error.ConfigInvalid;
     }
@@ -297,7 +297,7 @@ pub fn validate(config: *const crosswindConfig) !void {
 
 test "defaultConfig" {
     const config = defaultConfig();
-    try std.testing.expectEqualStrings("crosswind", config.name);
+    try std.testing.expectEqualStrings("zig-css", config.name);
     try std.testing.expectEqualStrings(":", config.separator);
 }
 
